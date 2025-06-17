@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { BiLoaderCircle } from "react-icons/bi";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,8 +24,6 @@ import { showError } from "@/utils/toast";
 
 function Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect");
   const {
     register,
     handleSubmit,
