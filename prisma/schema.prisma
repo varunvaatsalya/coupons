@@ -4,6 +4,8 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// npx prisma migrate dev --name add-age-to-user
+
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -14,10 +16,60 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ------------------- User Model -------------------
+
 model User {
-  id      Int      @id @default(autoincrement())
-  name    String?  @db.VarChar(255)
-  email   String   @unique @db.VarChar(255)
+  id                String    @id @default(uuid()) @db.Uuid
+  uid               String    @db.VarChar(255)
+  name              String?   @db.VarChar(60)
+  email             String    @unique @db.VarChar(255)
+  password          String    @db.VarChar(255)
+  role              Role
+  editPermission    Boolean   @default(false)
+  lastLogoutByAdmin DateTime?
+  isLogoutPending   Boolean?  @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now()) @updatedAt
+}
+
+enum Role {
+  default_admin
+  admin
+  owner
+}
+
+// ------------------- Admin Model -------------------
+
+model Admin {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+}
+
+// ------------------- Role Logout Model -------------------
+
+model RoleLogout {
+  id           String   @id @default(uuid()) @db.Uuid
+  role         Role     @unique
+  lastLogoutAt DateTime
+}
+
+// ------------------- Login History Model -------------------
+
+model LoginHistory {
+  id                 String      @id @default(uuid()) @db.Uuid
+  attemptedUserEmail String      @db.VarChar(255)
+  role               Role?
+  status             LoginStatus
+  ipAddress          String?     @db.VarChar(255)
+  userAgent          String?     @db.VarChar(255)
+  loginTime          DateTime    @default(now())
+
+  @@index([loginTime])
+}
+
+enum LoginStatus {
+  success
+  failed
 }

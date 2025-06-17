@@ -1,4 +1,12 @@
-import { Calendar, ChevronRight, Inbox, Search, Settings, Settings2Icon } from "lucide-react";
+import {
+  Ambulance,
+  Calendar,
+  ChevronRight,
+  Inbox,
+  Search,
+  Settings,
+  Settings2Icon,
+} from "lucide-react";
 import { RiCoupon3Line } from "react-icons/ri";
 import { LuLayoutDashboard } from "react-icons/lu";
 
@@ -20,6 +28,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import Link from "next/link";
 
 // Menu links.
 const sidebarSections = [
@@ -53,9 +62,16 @@ export function AppSidebar({ role }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="text-lg font-bold px-4 py-2">Code Vouchers</div>
+        <SidebarMenuButton size="lg" className="">
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-600">
+            <Ambulance className="size-5" />
+          </div>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold">Coupons</span>
+            <span className="truncate text-xs">Code vouchers</span>
+          </div>
+        </SidebarMenuButton>
       </SidebarHeader>
-
       <SidebarContent>
         <SidebarMenu>
           {sidebarSections
@@ -68,13 +84,17 @@ export function AppSidebar({ role }) {
                 <Collapsible key={section.title}>
                   <SidebarMenuItem className="p-0">
                     <CollapsibleTrigger asChild>
-                      <button className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium rounded-md hover:bg-muted transition-colors group">
-                        <div className="flex items-center gap-2">
-                          <section.icon className="h-4 w-4 text-muted-foreground" />
+                      <SidebarMenuButton
+                        className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium rounded-md hover:bg-muted transition-colors group"
+                        // isActive={pathname === item.url}
+                        // tooltip={item.name}
+                      >
+                        <Link href={"/dashboard"}>
+                          <section.icon />
                           <span>{section.title}</span>
-                        </div>
+                        </Link>
                         <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
-                      </button>
+                      </SidebarMenuButton>
                     </CollapsibleTrigger>
                   </SidebarMenuItem>
                   <CollapsibleContent>
