@@ -11,8 +11,7 @@ export default async function Layout({ children }) {
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar role={role} />
-      <main>
-        <SidebarTrigger />
+      <main className="w-full">
         {children}
       </main>
     </SidebarProvider>

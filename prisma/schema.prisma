@@ -73,3 +73,83 @@ enum LoginStatus {
   success
   failed
 }
+
+// ------------------- Merchant Model -------------------
+
+model Merchant {
+  id                    String      @id @default(uuid()) @db.Uuid
+  merchantName          String?
+  merchantSeoName       String?
+  description           String?
+  translatedDescription String?
+  type                  String?
+  logoUrl               String?
+  status                String?
+  visibility            String?
+  geographicMarket      String?
+  networkId             String?
+  network               Network?    @relation(fields: [networkId], references: [id])
+  currency              String?
+  staff                 String?
+  merchantUrl           String?
+  affiliateUrl          String?
+  isPriority            Boolean     @default(false)
+  isPremium             Boolean     @default(false)
+  pageTitle             String?
+  metaDescription       String?
+  metaKeywords          String[]
+  pageHeading           String?
+  howToText             HowToStep[]
+  howToOverviewImageUrl String?
+  overviewImageUrl      String?
+  networkMerchantId     String?
+  isCPTAvailable        Boolean     @default(false)
+  androidAppUrl         String?
+  iosAppUrl             String?
+  windowsAppUrl         String?
+
+  formState   String   @default("draft") // "draft" | "completed"
+  dateCreated DateTime @default(now())
+  createdBy   String?
+}
+
+// ------------------- Network Model -------------------
+
+model Network {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String     @unique
+  parameters Json // { "subid": "{affiliateId}", "clickid": "{clickId}" }
+  createdAt  DateTime   @default(now())
+  merchants  Merchant[]
+
+  @@map("networks")
+}
+
+model MpuAd {
+  id String @id @default(uuid())
+
+  targetType String // e.g. "Merchant", "Offer", "Product", "Category"
+  targetId   String // UUID of the related model
+
+  imageUrl    String? // Either this...
+  htmlContent String? // ...or this
+
+  order     Int? // Optional: to control display order
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
+
+model HowToStep {
+  id         String   @id @default(uuid())
+  merchantId String
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  stepNumber  Int // e.g., 1, 2, 3...
+  title       String? // Optional short title like "Go to Website"
+  description String
+  imageUrl    String? // Optional screenshot
+
+  createdAt DateTime @default(now())
+}

@@ -3,13 +3,15 @@ import {
   Calendar,
   ChevronRight,
   Inbox,
+  MergeIcon,
   Search,
   Settings,
   Settings2Icon,
+  Store,
 } from "lucide-react";
 import { RiCoupon3Line } from "react-icons/ri";
 import { LuLayoutDashboard } from "react-icons/lu";
-
+import { IoStorefrontOutline } from "react-icons/io5";
 import {
   Sidebar,
   SidebarContent,
@@ -42,6 +44,12 @@ const sidebarSections = [
     ],
   },
   {
+    title: "Merchants",
+    icon: IoStorefrontOutline,
+    roles: ["admin", "owner"],
+    href: "/merchants",
+  },
+  {
     title: "Settings",
     icon: Settings2Icon,
     roles: ["admin", "owner"],
@@ -64,7 +72,7 @@ export function AppSidebar({ role }) {
       <SidebarHeader>
         <SidebarMenuButton size="lg" className="">
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-600">
-            <Ambulance className="size-5" />
+            <Ambulance className="size-6" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">Coupons</span>
@@ -80,20 +88,17 @@ export function AppSidebar({ role }) {
             )
             .map((section) =>
               section.items ? (
-                // Expandable item
                 <Collapsible key={section.title}>
                   <SidebarMenuItem className="p-0">
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium rounded-md hover:bg-muted transition-colors group"
-                        // isActive={pathname === item.url}
-                        // tooltip={item.name}
-                      >
-                        <Link href={"/dashboard"}>
-                          <section.icon />
-                          <span>{section.title}</span>
-                        </Link>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                      <SidebarMenuButton className="w-full px-3 py-2 text-sm font-medium hover:bg-muted transition-colors group">
+                        <div className="flex items-center gap-2">
+                          <section.icon className="size-5 text-muted-foreground" />
+                          <span className="truncate transition-all duration-300 group-data-[collapsed=true]:w-0 group-data-[collapsed=true]:opacity-0">
+                            {section.title}
+                          </span>
+                        </div>
+                        <ChevronRight className="h-4 w-4 ml-auto transition-transform duration-200 group-data-[state=open]:rotate-90" />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                   </SidebarMenuItem>
@@ -101,31 +106,34 @@ export function AppSidebar({ role }) {
                     <SidebarMenuSub className="ml-4">
                       {section.items.map((sub) => (
                         <SidebarMenuSubItem key={sub.href}>
-                          <a
+                          <Link
                             href={sub.href}
                             className="flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-sm hover:bg-muted transition-colors"
                           >
                             {sub.icon && (
                               <sub.icon className="h-4 w-4 text-muted-foreground" />
                             )}
-                            {sub.label}
-                          </a>
+                            <span className="truncate transition-all duration-300 group-data-[collapsed=true]:w-0 group-data-[collapsed=true]:opacity-0">
+                              {sub.label}
+                            </span>
+                          </Link>
                         </SidebarMenuSubItem>
                       ))}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </Collapsible>
               ) : (
-                // Direct link item
                 <SidebarMenuItem key={section.title}>
                   <SidebarMenuButton asChild>
-                    <a
+                    <Link
                       href={section.href}
                       className="flex items-center gap-2 w-full px-4 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
                     >
                       <section.icon className="h-4 w-4 text-muted-foreground" />
-                      <span>{section.title}</span>
-                    </a>
+                      <span className="truncate transition-all duration-300 group-data-[collapsed=true]:w-0 group-data-[collapsed=true]:opacity-0">
+                        {section.title}
+                      </span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )
