@@ -84,10 +84,11 @@ model Merchant {
   translatedDescription String?
   type                  String?
   logoUrl               String?
+  logoPublicId          String?
   status                String?
   visibility            String?
   geographicMarket      String?
-  networkId             String?
+  networkId             String?     @db.Uuid
   network               Network?    @relation(fields: [networkId], references: [id])
   currency              String?
   staff                 String?
@@ -125,6 +126,19 @@ model Network {
   @@map("networks")
 }
 
+model HowToStep {
+  id         String   @id @default(uuid())
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  stepNumber  Int // e.g., 1, 2, 3...
+  title       String? // Optional short title like "Go to Website"
+  description String
+  imageUrl    String? // Optional screenshot
+
+  createdAt DateTime @default(now())
+}
+
 model MpuAd {
   id String @id @default(uuid())
 
@@ -141,15 +155,41 @@ model MpuAd {
   @@index([targetType, targetId])
 }
 
-model HowToStep {
-  id         String   @id @default(uuid())
-  merchantId String
-  merchant   Merchant @relation(fields: [merchantId], references: [id])
+// ------------------- Image Store Model - for track image records -------------------
 
-  stepNumber  Int // e.g., 1, 2, 3...
-  title       String? // Optional short title like "Go to Website"
-  description String
-  imageUrl    String? // Optional screenshot
-
+model ImageAsset {
+  id        String   @id @default(uuid())
+  url       String
+  publicId  String   @unique
+  tag       String? // Optional tag for categorization
   createdAt DateTime @default(now())
+}
+
+model MerchantType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MerchantStatus {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GeographicMarket {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Currency {
+  id        String   @id @default(cuid())
+  code      String   @unique // ISO codes like 'INR', 'USD'
+  symbol    String? // Optional, e.g. ₹ or $
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

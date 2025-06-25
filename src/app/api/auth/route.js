@@ -24,7 +24,7 @@ export async function GET(req) {
   }
 
   return NextResponse.json(
-    { route: `/dashboard-${userRole}`, success: true },
+    { route: `/dashboard`, success: true },
     { status: 200 }
   );
 }

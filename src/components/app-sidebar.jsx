@@ -31,6 +31,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import Link from "next/link";
+import { FaNetworkWired } from "react-icons/fa";
 
 // Menu links.
 const sidebarSections = [
@@ -48,6 +49,12 @@ const sidebarSections = [
     icon: IoStorefrontOutline,
     roles: ["admin", "owner"],
     href: "/merchants",
+  },
+  {
+    title: "Networks",
+    icon: FaNetworkWired,
+    roles: ["admin", "owner"],
+    href: "/networks",
   },
   {
     title: "Settings",

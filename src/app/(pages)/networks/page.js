@@ -35,7 +35,7 @@ function Page() {
         <Button asChild className="flex items-center gap-1">
           <Link href="/merchants/new">
             <IoIosAddCircleOutline />
-            <div>Add Merchant</div>
+            <div>Add NetWork</div>
           </Link>
         </Button>
       </div>
