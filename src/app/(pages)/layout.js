@@ -9,7 +9,7 @@ export default async function Layout({ children }) {
   let role = "admin";
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider>
       <AppSidebar role={role} />
       <main className="w-full">
         {children}

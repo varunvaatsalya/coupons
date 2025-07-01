@@ -24,32 +24,56 @@ export async function GET(req) {
     return res;
   }
 
-  if (!id) {
-    return NextResponse.json(
-      { success: false, message: "Merchant ID missing in URL" },
-      { status: 400 }
-    );
-  }
+  // if (!id) {
+  //   return NextResponse.json(
+  //     { success: false, message: "Merchant ID missing in URL" },
+  //     { status: 400 }
+  //   );
+  // }
 
   try {
-    const merchant = await prisma.merchant.findUnique({
-      where: { id },
-      include: {
-        network: {
-          select: { name: true },
+    const [merchantType, geographicCountry, networks] = await Promise.all([
+      prisma.merchantType.findMany({ orderBy: { name: "asc" } }),
+      prisma.geographicCountry.findMany({ orderBy: { name: "asc" } }),
+      prisma.network.findMany({
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    if (!id || id === "new") {
+      return NextResponse.json({
+        success: true,
+        formData: {
+          merchantType,
+          geographicCountry,
+          networks,
         },
-        howToText: {
-          orderBy: { stepNumber: "asc" },
-          select: {
-            id: true,
-            stepNumber: true,
-            title: true,
-            description: true,
-            imageUrl: true,
+        merchant: null,
+      });
+    }
+
+    let merchant= null;
+    try {
+      merchant = await prisma.merchant.findUnique({
+        where: { id },
+        include: {
+          network: { select: { name: true } },
+          howToText: {
+            orderBy: { stepNumber: "asc" },
+            select: {
+              id: true,
+              stepNumber: true,
+              title: true,
+              description: true,
+              imageUrl: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.log("merchant docs not found using id:", id);
+    }
 
     if (!merchant) {
       return NextResponse.json(
@@ -58,7 +82,18 @@ export async function GET(req) {
       );
     }
 
-    return NextResponse.json({ success: true, merchant }, { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        merchant,
+        formData: {
+          merchantType,
+          geographicCountry,
+          networks,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Merchant fetch error:", error);
     return NextResponse.json(
@@ -90,15 +125,15 @@ export async function POST(req) {
   }
 
   try {
-    const payload = await req.json();
+    const body = await req.json();
+    const { id, howToText = [], ...payload } = body;
 
-    console.log("New Merchant Payload:", payload);
     let merchant;
 
-    if (payload.id) {
+    if (id) {
       merchant = await prisma.merchant.update({
-        where: { id: payload.id },
-        data: { ...payload, id: undefined }, // don’t update id
+        where: { id },
+        data: payload,
       });
     } else {
       merchant = await prisma.merchant.create({
@@ -125,8 +160,76 @@ export async function POST(req) {
       }
     }
 
+    let updatedHowToText = null;
+    console.log("pre How to text", howToText);
+    if (Array.isArray(howToText) && "howToText" in body) {
+      let merchantId = merchant.id;
+
+      const existingSteps = await prisma.howToStep.findMany({
+        where: { merchantId },
+      });
+
+      const existingStepIds = existingSteps.map((step) => step.id);
+
+      // Step 2: Separate incoming data
+      const stepsToUpdate = howToText.filter(
+        (s) => s.id && existingStepIds.includes(s.id)
+      );
+      const stepsToCreate = howToText
+        .map((s, index) => ({ ...s, originalIndex: index }))
+        .filter((s) => !s.id)
+        .map((s) => ({
+          ...s,
+          stepNumber: s.originalIndex + 1,
+        }));
+      const incomingIds = howToText.filter((s) => s.id).map((s) => s.id);
+
+      const stepsToDelete = existingSteps.filter(
+        (s) => !incomingIds.includes(s.id)
+      );
+
+      await Promise.all([
+        ...stepsToUpdate.map((s) =>
+          prisma.howToStep.update({
+            where: { id: s.id },
+            data: {
+              stepNumber: s.stepNumber,
+              title: s.title,
+              description: s.description,
+              imageUrl: s.imageUrl,
+            },
+          })
+        ),
+
+        ...stepsToCreate.map((s) =>
+          prisma.howToStep.create({
+            data: {
+              merchantId,
+              stepNumber: s.stepNumber,
+              title: s.title,
+              description: s.description,
+              imageUrl: s.imageUrl,
+            },
+          })
+        ),
+
+        ...stepsToDelete.map((s) =>
+          prisma.howToStep.delete({
+            where: { id: s.id },
+          })
+        ),
+      ]);
+
+      updatedHowToText = await prisma.howToStep.findMany({
+        where: { merchantId },
+        orderBy: { stepNumber: "asc" },
+      });
+    }
+
+    console.log(updatedHowToText);
+
     return NextResponse.json(
-      { id: merchant.id, success: true },
+      { id: merchant.id, updatedHowToText, success: true },
       { status: 200 }
     );
   } catch (error) {

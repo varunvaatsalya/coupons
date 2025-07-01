@@ -29,69 +29,65 @@ export async function GET(req) {
     const take = 25;
     const skip = (page - 1) * take;
 
-    const merchantName = searchParams.get("merchantName") || undefined;
-    const type = searchParams.get("type") || undefined;
+    const codeorRef = searchParams.get("codeorRef") || undefined;
+    const offerType = searchParams.get("type") || undefined;
     const status = searchParams.get("status") || undefined;
-    const visibility = searchParams.get("visibility") || undefined;
-    const networkId = searchParams.get("networkId") || undefined;
+    const merchantId = searchParams.get("merchantId") || undefined;
 
     const where = {};
-    if (merchantName) {
-      where.merchantName = { contains: merchantName, mode: "insensitive" };
+    if (offerType) {
+      where.offerType = { contains: offerType, mode: "insensitive" };
     }
-    if (type) where.type = type;
+    if (codeorRef) {
+      where.OR = [
+        { voucherCode: { contains: codeorRef, mode: "insensitive" } },
+        { offerReference: { contains: codeorRef, mode: "insensitive" } },
+      ];
+    }
     if (status) where.status = status;
-    if (visibility) where.visibility = visibility;
-    if (networkId) where.networkId = networkId;
+    if (merchantId) where.merchantId = merchantId;
 
     // Get filtered merchants (paginated)
-    const merchants = await prisma.merchant.findMany({
+    const offers = await prisma.offer.findMany({
       where,
       select: {
         id: true,
-        merchantName: true,
-        type: true,
+        offerReference: true,
+        offerType: true,
         status: true,
-        visibility: true,
-        merchantUrl: true,
-        offers: { select: { id: true, status: true } },
+        startDate: true,
+        endDate: true,
+        merchant: {
+          select: {
+            id: true,
+            merchantName: true,
+          },
+        },
       },
-      orderBy: { dateCreated: "desc" },
+      orderBy: { createdAt: "desc" },
       take,
       skip,
     });
 
-    // Offer count
-    const mappedMerchants = merchants.map(({ offers, ...m }) => {
-      const total = offers.length;
-      const active = offers.filter((o) => o.status === "Active").length;
-
-      return {
-        ...m,
-        offerCount: total,
-        activeOfferCount: active,
-      };
-    });
-
     // Total matching count for pagination
-    const totalCount = await prisma.merchant.count({ where });
+    const totalCount = await prisma.offer.count({ where });
     const totalPages = Math.ceil(totalCount / take);
 
     let draftCount = null;
-    let networks = [];
-    let merchantTypes = [];
+    let merchants = [];
+    let offerTypes = [];
     // Draft merchant count (unfiltered)
     if (Object.keys(where).length === 0) {
-      draftCount = await prisma.merchant.count({
+      draftCount = await prisma.offer.count({
         where: { status: "draft" },
       });
 
       // All networks (for dropdown)
-      networks = await prisma.network.findMany({
-        select: { id: true, name: true },
-        orderBy: { name: "asc" },
+      merchants = await prisma.merchant.findMany({
+        select: { id: true, merchantName: true },
+        orderBy: { merchantName: "asc" },
       });
-      merchantTypes = await prisma.merchantType.findMany({
+      offerTypes = await prisma.offerType.findMany({
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       });
@@ -100,13 +96,13 @@ export async function GET(req) {
     return NextResponse.json(
       {
         success: true,
-        merchants: mappedMerchants,
+        offers,
         totalPages,
         currentPage: page,
         ...(draftCount && { draftCount }),
-        ...(Array.isArray(networks) && networks.length > 0 && { networks }),
-        ...(Array.isArray(merchantTypes) &&
-          merchantTypes.length > 0 && { merchantTypes }),
+        ...(Array.isArray(merchants) && merchants.length > 0 && { merchants }),
+        ...(Array.isArray(offerTypes) &&
+          offerTypes.length > 0 && { offerTypes }),
       },
       { status: 200 }
     );

@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTrigger,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +24,7 @@ import { FaExpandArrowsAlt, FaPlus } from "react-icons/fa";
 // import { MdEdit } from "react-icons/md";
 import { ImCross } from "react-icons/im";
 import { SelectValue } from "@radix-ui/react-select";
-import { Trash2 } from "lucide-react";
+import { LoaderCircle, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { debounce } from "lodash";
 import { IoCloudDoneOutline } from "react-icons/io5";
@@ -33,21 +35,53 @@ import { showError } from "@/utils/toast";
 import { IoMdArrowRoundBack } from "react-icons/io";
 import Link from "next/link";
 
-// 3eba967d-c880-4917-9492-a8781d56d6cf
+const MERCHANT_FIELD_LABELS = {
+  merchantName: "Merchant Name",
+  merchantSeoName: "SEO Name",
+  description: "Description",
+  translatedDescription: "Translated Description",
+  type: "Type",
+  logoUrl: "Logo URL",
+  logoPublicId: "Logo Public ID",
+  status: "Status",
+  visibility: "Visibility",
+  geographicMarket: "Geographic Market",
+  networkId: "Network",
+  currency: "Currency",
+  staff: "Staff",
+  merchantUrl: "Merchant URL",
+  affiliateUrl: "Affiliate URL",
+  isPriority: "Priority Merchant",
+  isPremium: "Premium Merchant",
+  pageTitle: "Page Title",
+  metaDescription: "Meta Description",
+  metaKeywords: "Meta Keywords",
+  pageHeading: "Page Heading",
+  howToText: "How-To Steps",
+  // howToOverviewImageUrl: "How-To Overview Image",
+  // overviewImageUrl: "Overview Image",
+  networkMerchantId: "Network Merchant ID",
+  isCPTAvailable: "CPT Available",
+  androidAppUrl: "Android App URL",
+  iosAppUrl: "iOS App URL",
+  windowsAppUrl: "Windows App URL",
+};
 
 function Page() {
   const router = useRouter();
   const params = useParams();
 
-  const [mpuDialogOpen, setMpuDialogOpen] = useState(false);
-  const [mpuAds, setMpuAds] = useState([]);
   const [showImageDialog, setShowImageDialog] = useState(null);
   const [creating, setCreating] = useState(false);
   const [merchantId, setMerchantId] = useState(params.merchantId);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [apiCallEnabled, setApiCallEnabled] = useState(true);
-  const [stepImageUrls, setStepImageUrls] = useState({});
   const [isLogoDeleting, setIsLogoDeleting] = useState(false);
+  const [formOptions, setFormOptions] = useState({
+    merchantType: [],
+    geographicCountry: [],
+    networks: [],
+  });
 
   const retryTimeoutRef = useRef(null);
 
@@ -64,7 +98,7 @@ function Page() {
         status: "",
         visibility: "",
         geographicMarket: "",
-        network: null,
+        networkId: "",
         currency: "",
         staff: "",
         merchantUrl: "",
@@ -75,7 +109,7 @@ function Page() {
         metaDescription: "",
         metaKeywords: [""],
         pageHeading: "",
-        howToSteps: [],
+        howToText: [],
         howToOverviewImageUrl: "",
         overviewImageUrl: "",
         networkMerchantId: "",
@@ -87,6 +121,7 @@ function Page() {
         createdBy: "user-id",
       },
     });
+
   const prevValuesRef = useRef({});
   const watchedValues = watch();
 
@@ -124,6 +159,7 @@ function Page() {
       if (Object.keys(payload).length === 0) {
         return;
       }
+      console.log("save apii called", payload);
 
       if (merchantId !== "new") {
         payload.id = merchantId;
@@ -146,10 +182,20 @@ function Page() {
             router.replace(`/merchants/${result.id}`);
           }
 
+          const currentFormValues = getValues();
+
+          if (result.updatedHowToText) {
+            currentFormValues.howToText = result.updatedHowToText;
+            setValue("howToText", result.updatedHowToText);
+          }
+
           prevValuesRef.current = {
             ...prevValuesRef.current,
-            ...getValues(),
+            ...currentFormValues,
           };
+        } else {
+          showError(result.message);
+          setApiCallEnabled(false);
         }
       } catch (err) {
         console.error("Failed to save:", err);
@@ -169,21 +215,33 @@ function Page() {
   ).current;
 
   useEffect(() => {
-    if ((!initialDataLoaded && merchantId !== "new") || !apiCallEnabled) return;
+    if (
+      (!initialDataLoaded && merchantId !== "new") ||
+      !apiCallEnabled ||
+      creating
+    )
+      return;
     debouncedSave();
   }, [watchedValues]);
 
   useEffect(() => {
-    if (merchantId !== "new" && !initialDataLoaded) {
+    if (!initialDataLoaded) {
       fetch(`/api/merchants/newMerchant?id=${merchantId}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.success) {
+          if (!data.success) {
+            router.replace("/merchants/new");
+            return;
+          }
+
+          if (data.merchant) {
             reset(data.merchant);
             prevValuesRef.current = data.merchant;
-            setInitialDataLoaded(true);
             console.log(data.merchant);
-          } else router.replace("/merchants/new");
+          }
+          setFormOptions(data.formData);
+
+          setInitialDataLoaded(true);
         });
     }
   }, [merchantId, initialDataLoaded, reset]);
@@ -193,17 +251,8 @@ function Page() {
     name: "metaKeywords",
   });
 
-  const {
-    fields: stepFields,
-    append: appendStep,
-    remove: removeStep,
-  } = useFieldArray({
-    control,
-    name: "howToSteps",
-  });
-
   const onSubmit = (data) => {
-    console.log({ ...data, mpuAds });
+    console.log(data);
   };
 
   // const handleImageChange = () => {
@@ -267,34 +316,25 @@ function Page() {
         })()
       : image || "";
 
-  const handleStepImageChange = (e, index) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // 🧹 Revoke old URL
-    if (stepImageUrls[index]) {
-      URL.revokeObjectURL(stepImageUrls[index]);
-    }
-
-    const newUrl = URL.createObjectURL(file);
-    setStepImageUrls((prev) => ({ ...prev, [index]: newUrl }));
-    setValue(`howToSteps.${index}.imageFile`, file);
-  };
-
-  useEffect(() => {
-    return () => {
-      Object.values(stepImageUrls).forEach((url) => URL.revokeObjectURL(url));
-      if (imagePreviewUrlRef.current) {
-        URL.revokeObjectURL(imagePreviewUrlRef.current);
-      }
-    };
-  }, []);
+  if (!initialDataLoaded) {
+    return (
+      <div className="min-h-screen w-full flex flex-col justify-center items-center">
+        <LoaderCircle className="size-16 animate-spin" />
+        <div className="text-2xl font-semibold">Loading...</div>
+        <div className="text-lg font-semibold">Merchant Form Data</div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-2 w-full px-4">
       <div className="flex justify-between items-center gap-3 border-b py-2">
         <div className="flex items-center gap-2">
-          <Button variant="icon" onClick={() => router.back()} className="hover:opacity-80">
+          <Button
+            variant="icon"
+            onClick={() => router.back()}
+            className="hover:opacity-80"
+          >
             <IoMdArrowRoundBack className="size-6" />
           </Button>
           <div className="text-2xl font-semibold">New Merchant</div>
@@ -309,7 +349,11 @@ function Page() {
             ) : (
               <IoCloudDoneOutline className="size-5" />
             )}
-            {creating ? "Saving..." : "Draft Saved"}
+            {!apiCallEnabled
+              ? "Stopped"
+              : creating
+              ? "Saving..."
+              : "Draft Saved"}
           </Badge>
           <Button variant="outline" asChild>
             <Link href={"/merchants/config"}>Merchant Config</Link>
@@ -327,7 +371,6 @@ function Page() {
           placeholder="Enter Merchant Name"
         />
       </div>
-
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>2.</div>
@@ -339,7 +382,6 @@ function Page() {
           placeholder="Enter Merchant SEO Name"
         />
       </div>
-
       <div className="grid grid-cols-12 gap-4 items-start">
         <label className="col-span-3 flex items-center gap-3">
           <div>3.</div>
@@ -351,7 +393,6 @@ function Page() {
           placeholder="Enter Description"
         />
       </div>
-
       <div className="grid grid-cols-12 gap-4 items-start">
         <label className="col-span-3 flex items-center gap-3">
           <div>4.</div>
@@ -363,25 +404,30 @@ function Page() {
           placeholder="Enter translated Description"
         />
       </div>
-
-      {/* 5. Type Dropdown */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>5.</div>
           <div>Type</div>
         </label>
-        <Select {...register("type")}>
+        <Select
+          value={watch("type") || ""}
+          onValueChange={(val) => {
+            setValue("type", val);
+          }}
+          // {...register("type")}
+        >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="online">Online</SelectItem>
-            <SelectItem value="offline">Offline</SelectItem>
+            {formOptions?.merchantType?.map((type) => (
+              <SelectItem key={type.id} value={type.name}>
+                {type.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
-
-      {/* 6. Logo Upload with Preview */}
       <div className="grid grid-cols-12 gap-4 items-start my-3">
         <label className="col-span-3 flex items-center gap-3">
           <div>6.</div>
@@ -487,21 +533,25 @@ function Page() {
           // </div>
         )}
       </div>
-
-      {/* 7. Status Dropdown */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>7.</div>
           <div>Status</div>
         </label>
-        <Select {...register("status")}>
+        <Select
+          value={watch("status") || ""}
+          onValueChange={(val) => {
+            setValue("status", val);
+          }}
+        >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="closed">Closed</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -512,13 +562,21 @@ function Page() {
           <div>8.</div>
           <div>Visibility</div>
         </label>
-        <Select {...register("visibility")}>
+        <Select
+          value={watch("visibility") || ""}
+          onValueChange={(val) => {
+            setValue("visibility", val);
+          }}
+          // {...register("visibility")}
+        >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select visibility" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="public">Public</SelectItem>
+            <SelectItem value="premium">Premium</SelectItem>
             <SelectItem value="private">Private</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -529,13 +587,22 @@ function Page() {
           <div>9.</div>
           <div>Geographic Market</div>
         </label>
-        <Select {...register("geographicMarket")}>
+        <Select
+          value={watch("geographicMarket") || ""}
+          onValueChange={(val) => {
+            setValue("geographicMarket", val);
+          }}
+          // {...register("geographicMarket")}
+        >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select market" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="india">India</SelectItem>
-            <SelectItem value="global">Global</SelectItem>
+            {formOptions?.geographicCountry?.map((country) => (
+              <SelectItem key={country.id} value={country.name}>
+                {country.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -546,13 +613,22 @@ function Page() {
           <div>10.</div>
           <div>Network</div>
         </label>
-        <Select {...register("networkId")}>
+        <Select
+          value={watch("networkId") || ""}
+          onValueChange={(val) => {
+            setValue("networkId", val);
+          }}
+          // {...register("networkId")}
+        >
           <SelectTrigger className="w-1/2 col-span-9">
-            <SelectValue placeholder="Select network" />
+            <SelectValue placeholder="Select Network" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="network-1">Network 1</SelectItem>
-            <SelectItem value="network-2">Network 2</SelectItem>
+            {formOptions?.networks?.map((network) => (
+              <SelectItem key={network.id} value={network.id}>
+                {network.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -563,13 +639,25 @@ function Page() {
           <div>11.</div>
           <div>Currency</div>
         </label>
-        <Select {...register("currency")}>
+        <Select
+          value={watch("currency") || ""}
+          onValueChange={(val) => {
+            setValue("currency", val);
+          }}
+          // {...register("currency")}
+        >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select currency" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="INR">INR</SelectItem>
-            <SelectItem value="USD">USD</SelectItem>
+            {formOptions?.geographicCountry?.map((country) => (
+              <SelectItem key={country.id} value={country.currencyCode}>
+                {country.currencyCode +
+                  (country.currencySymbol
+                    ? ` (${country.currencySymbol})`
+                    : "")}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -591,7 +679,6 @@ function Page() {
         </Select>
       </div>
 
-      {/* 13. Merchant URL */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>13.</div>
@@ -604,7 +691,6 @@ function Page() {
         />
       </div>
 
-      {/* 14. Affiliate URL */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>14.</div>
@@ -617,16 +703,20 @@ function Page() {
         />
       </div>
 
-      {/* 15. Is Priority */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>15.</div>
           <div>Is Priority</div>
         </label>
-        <Checkbox className="size-6" {...register("isPriority")} />
+        <Checkbox
+          className="size-6"
+          checked={watch("isPriority")}
+          onCheckedChange={() => {
+            setValue("isPriority", !watch("isPriority"));
+          }}
+        />
       </div>
 
-      {/* 16. Is Premium */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>16.</div>
@@ -635,7 +725,6 @@ function Page() {
         <Checkbox className="size-6" {...register("isPremium")} />
       </div>
 
-      {/* 17. Page Title */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>17.</div>
@@ -648,7 +737,6 @@ function Page() {
         />
       </div>
 
-      {/* 18. Meta Description */}
       <div className="grid grid-cols-12 gap-4 items-start">
         <label className="col-span-3 flex items-center gap-3">
           <div>18.</div>
@@ -661,7 +749,6 @@ function Page() {
         />
       </div>
 
-      {/* 19. Meta Keywords */}
       <div className="grid grid-cols-12 gap-4 items-start">
         <label className="col-span-3 flex items-center gap-3">
           <div>19.</div>
@@ -695,7 +782,6 @@ function Page() {
         </div>
       </div>
 
-      {/* 20. Page Heading */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>20.</div>
@@ -707,89 +793,16 @@ function Page() {
           {...register("pageHeading")}
         />
       </div>
+
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>22.</div>
           <div>How To Text</div>
         </label>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              className={"col-span-9 w-1/2"}
-            >
-              + Add How To Steps ({watch("howToSteps")?.length || 0})
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent className="min-w-1/2">
-            <DialogHeader>
-              <DialogTitle>How To Steps</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 p-2 max-h-[70vh] overflow-y-auto">
-              {stepFields.map((field, index) => {
-                return (
-                  <div
-                    key={field.id}
-                    className="border p-4 rounded-lg space-y-2"
-                  >
-                    <h4 className="text-sm font-medium">Step {index + 1}</h4>
-
-                    <Input
-                      placeholder="Title (optional)"
-                      {...register(`howToSteps.${index}.title`)}
-                    />
-
-                    <Textarea
-                      placeholder="Description"
-                      {...register(`howToSteps.${index}.description`, {
-                        required: true,
-                      })}
-                    />
-                    <div className="space-y-2">
-                      <label>Upload Image</label>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleStepImageChange(e, index)}
-                      />
-
-                      {/* Image Preview */}
-                      {stepImageUrls[index] && (
-                        <img
-                          src={stepImageUrls[index]}
-                          alt="Preview"
-                          className="mt-2 w-32 h-32 object-cover rounded-md border"
-                        />
-                      )}
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeStep(index)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-between">
-              <Button
-                type="button"
-                onClick={() =>
-                  appendStep({ title: "", description: "", imageUrl: "" })
-                }
-              >
-                + Add Step
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <HowToText
+          value={watch("howToText") || []}
+          onSave={(steps) => setValue("howToText", steps)}
+        />
       </div>
 
       <div className="grid grid-cols-12 gap-4 items-center">
@@ -803,6 +816,7 @@ function Page() {
           {...register("networkMerchantId")}
         />
       </div>
+
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>25.</div>
@@ -810,6 +824,7 @@ function Page() {
         </label>
         <Checkbox className="size-6" {...register("isCPTAvailable")} />
       </div>
+
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>26.</div>
@@ -821,6 +836,7 @@ function Page() {
           {...register("androidAppUrl")}
         />
       </div>
+
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>27.</div>
@@ -832,6 +848,7 @@ function Page() {
           {...register("iosAppUrl")}
         />
       </div>
+
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>28.</div>
@@ -844,23 +861,179 @@ function Page() {
         />
       </div>
 
-      {/* MPU Ad Dialog */}
-      <Dialog open={mpuDialogOpen} onOpenChange={setMpuDialogOpen}>
-        <DialogTrigger asChild>
-          <Button type="button">Add MPU Ad</Button>
-        </DialogTrigger>
-        <DialogContent className="space-y-4">
-          <h3 className="text-lg font-semibold">Add MPU Ad</h3>
-          <Input
-            placeholder="Image URL or HTML"
-            onChange={(e) => setMpuAds([...mpuAds, e.target.value])}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <Button type="submit">Save Merchant</Button>
+      <ConfirmDialog
+        onConfirm={handleSubmit(onSubmit)}
+        fieldLabels={MERCHANT_FIELD_LABELS}
+        getValues={getValues}
+      />
     </form>
   );
 }
 
 export default Page;
+
+function HowToText({ value = [], onSave }) {
+  const [localSteps, setLocalSteps] = useState(value);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    console.log("hhhh", localSteps);
+  }, [localSteps]);
+
+  const handleAdd = () => {
+    setLocalSteps([
+      ...localSteps,
+      { title: "", description: "", imageUrl: "" },
+    ]);
+  };
+
+  const handleRemove = (index) => {
+    const updated = [...localSteps];
+    updated.splice(index, 1);
+    setLocalSteps(updated);
+  };
+
+  const handleChange = (index, field, val) => {
+    const updated = [...localSteps];
+    updated[index][field] = val;
+    setLocalSteps(updated);
+  };
+
+  const handleSave = () => {
+    onSave(localSteps);
+    console.log(localSteps);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" className={"col-span-9 w-1/2"}>
+          + Add How To Steps ({value?.length || 0})
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="min-w-1/2">
+        <DialogHeader>
+          <DialogTitle>How To Steps</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6 p-2 max-h-[70vh] overflow-y-auto">
+          {localSteps.map((step, index) => {
+            return (
+              <div key={index} className="border p-4 rounded-lg space-y-2">
+                <h4 className="text-sm font-medium">Step {index + 1}</h4>
+                <Input
+                  placeholder="Title (optional)"
+                  value={step.title}
+                  onChange={(e) => handleChange(index, "title", e.target.value)}
+                />
+
+                <Textarea
+                  placeholder="Description"
+                  value={step.description}
+                  onChange={(e) =>
+                    handleChange(index, "description", e.target.value)
+                  }
+                />
+                {/* <div className="space-y-2">
+                  <label>Upload Image</label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleStepImageChange(e, index)}
+                  />
+
+                  {stepImageUrls[index] && (
+                    <img
+                      src={stepImageUrls[index]}
+                      alt="Preview"
+                      className="mt-2 w-32 h-32 object-cover rounded-md border"
+                    />
+                  )}
+                </div> */}
+
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRemove(index)}
+                >
+                  Remove
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-between">
+          <Button type="button" onClick={handleAdd}>
+            + Add Step
+          </Button>
+          <Button type="button" onClick={handleSave}>
+            Save
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ConfirmDialog({ fieldLabels, onConfirm, getValues }) {
+  const [open, setOpen] = useState(false);
+  const values = getValues();
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  const handleConfirm = () => {
+    setOpen(false);
+    onConfirm();
+  };
+
+  return (
+    <>
+      <div className="flex justify-end items-center p-6">
+        <Button type="button" onClick={handleOpen}>
+          Preview Merchant
+        </Button>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="min-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Merchant Preview</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 text-sm pt-4">
+            {Object.entries(MERCHANT_FIELD_LABELS).map(([key, label]) => {
+              const value = values[key];
+              const isEmpty =
+                value === "" ||
+                value === null ||
+                value === undefined ||
+                (Array.isArray(value) && value.length === 0);
+              return (
+                <div
+                  key={key}
+                  className={`p-2 rounded border text-center font-medium ${
+                    isEmpty
+                      ? "bg-red-100 text-red-700 border-red-300"
+                      : "bg-green-100 text-green-700 border-green-300"
+                  }`}
+                >
+                  {label}
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

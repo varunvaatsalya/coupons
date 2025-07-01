@@ -8,7 +8,7 @@ import { IoMdArrowRoundBack } from "react-icons/io";
 import { MdDelete, MdEdit } from "react-icons/md";
 
 const configLabels = {
-  merchantType: "Merchant Type",
+  offerType: "Offer Type",
 };
 
 function Page() {
@@ -18,7 +18,7 @@ function Page() {
   useEffect(() => {
     const fetchConfigs = async () => {
       try {
-        let res = await fetch("/api/merchants/configs");
+        let res = await fetch("/api/offers/configs");
         res = await res.json();
         if (res.success) {
           setConfigs(res.data);
@@ -50,13 +50,13 @@ function Page() {
         >
           <IoMdArrowRoundBack className="size-6" />
         </Button>
-        <div className="text-2xl font-semibold">Merchant Configs</div>
+        <div className="text-2xl font-semibold">Offer Configs</div>
       </div>
       <div className="text-sm text-muted-foreground">
-        Configure your merchant settings here.
+        Configure your offer settings here.
       </div>
       <div className="p-5 max-w-4xl mx-auto">
-        <h1 className="text-xl font-bold mb-6">Merchant Types</h1>
+        <h1 className="text-xl font-bold mb-6">Offer Types</h1>
         {/* <Accordion type="multiple" className="w-full space-y-4">
           {Object.entries(configs).map(([type, items]) => (
             <AccordionItem key={type} value={type}>
@@ -105,7 +105,7 @@ function ConfigSection({ type, items, onUpdate }) {
     };
 
     try {
-      let res = await fetch("/api/merchants/configs", {
+      let res = await fetch("/api/offers/configs", {
         method: "POST",
         body: JSON.stringify({ type, value }),
       });
@@ -146,7 +146,7 @@ function ConfigSection({ type, items, onUpdate }) {
   const handleDelete = async (index) => {
     const item = localItems[index];
     try {
-      let res = await fetch("/api/merchants/configs", {
+      let res = await fetch("/api/offers/configs", {
         method: "DELETE",
         body: JSON.stringify({ type, id: item.id }),
       });

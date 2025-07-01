@@ -1,29 +1,27 @@
 import {
-  Ambulance,
-  Calendar,
+  BadgePercent,
   ChevronRight,
-  Inbox,
-  MergeIcon,
-  Search,
+  FileChartColumn,
+  Globe,
+  LayoutPanelLeft,
+  LetterText,
+  ListTreeIcon,
+  MonitorCog,
+  Network,
   Settings,
-  Settings2Icon,
-  Store,
+  UserRoundCog,
 } from "lucide-react";
-import { RiCoupon3Line } from "react-icons/ri";
 import { LuLayoutDashboard } from "react-icons/lu";
-import { IoStorefrontOutline } from "react-icons/io5";
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubItem,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
   Collapsible,
@@ -31,45 +29,89 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import Link from "next/link";
-import { FaNetworkWired } from "react-icons/fa";
 
 // Menu links.
 const sidebarSections = [
   {
-    title: "Management",
+    title: "Dashboard",
     icon: LuLayoutDashboard,
     roles: ["admin", "owner"],
-    items: [
-      { label: "Dashboard", icon: LuLayoutDashboard, href: "/dashboard" },
-      { label: "Inbox", icon: LuLayoutDashboard, href: "/inbox" },
-    ],
+    href: "/dashboard",
   },
   {
     title: "Merchants",
-    icon: IoStorefrontOutline,
+    icon: LayoutPanelLeft,
     roles: ["admin", "owner"],
     href: "/merchants",
   },
   {
     title: "Networks",
-    icon: FaNetworkWired,
+    icon: Network,
     roles: ["admin", "owner"],
     href: "/networks",
   },
   {
-    title: "Settings",
-    icon: Settings2Icon,
+    title: "Country",
+    icon: Globe,
     roles: ["admin", "owner"],
-    href: "/dashboard",
+    href: "/country",
   },
   {
-    title: "Configuration",
-    icon: Settings,
+    title: "Category",
+    icon: ListTreeIcon,
+    roles: ["admin", "owner"],
+    href: "/category",
+  },
+  {
+    title: "Offers",
+    icon: BadgePercent,
+    roles: ["admin", "owner"],
+    href: "/offers",
+  },
+  {
+    title: "Site Management",
+    icon: MonitorCog,
     roles: ["admin"],
     items: [
-      { label: "Calendar", icon: LuLayoutDashboard, href: "/calendar" },
+      { label: "Calendar", icon: LuLayoutDashboard, href: "/roles" },
       { label: "General Settings", icon: LuLayoutDashboard, href: "/setings" },
     ],
+  },
+  {
+    title: "Content Management",
+    icon: LetterText,
+    roles: ["admin"],
+    items: [
+      { label: "Calendar", icon: LuLayoutDashboard, href: "/roles" },
+      { label: "General Settings", icon: LuLayoutDashboard, href: "/setings" },
+    ],
+  },
+  {
+    title: "Reporting",
+    icon: FileChartColumn,
+    roles: ["admin"],
+    items: [
+      { label: "Calendar", icon: LuLayoutDashboard, href: "/roles" },
+      { label: "General Settings", icon: LuLayoutDashboard, href: "/setings" },
+    ],
+  },
+  {
+    title: "Role Management",
+    icon: UserRoundCog,
+    roles: ["admin"],
+    href: "/roles",
+  },
+  {
+    title: "Security",
+    icon: UserRoundCog,
+    roles: ["admin"],
+    href: "/security",
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    roles: ["admin", "owner"],
+    href: "/settings",
   },
 ];
 
@@ -77,17 +119,20 @@ export function AppSidebar({ role }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenuButton size="lg" className="">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-600">
-            <Ambulance className="size-6" />
+        {/* <SidebarMenuButton size="lg" className=""> */}
+        <div className={"flex items-center gap-2"}>
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg hover:bg-muted transition-colors">
+            {/* <Ambulance className="size-6" /> */}
+            <SidebarTrigger className="size-6" />
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
+          <div className="grid text-left text-sm leading-tight">
             <span className="truncate font-semibold">Coupons</span>
             <span className="truncate text-xs">Code vouchers</span>
           </div>
-        </SidebarMenuButton>
+        </div>
+        {/* </SidebarMenuButton> */}
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-1">
         <SidebarMenu>
           {sidebarSections
             .filter(
@@ -98,14 +143,14 @@ export function AppSidebar({ role }) {
                 <Collapsible key={section.title}>
                   <SidebarMenuItem className="p-0">
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton className="w-full px-3 py-2 text-sm font-medium hover:bg-muted transition-colors group">
+                      <SidebarMenuButton className="w-full px-4 py-2 text-sm font-medium hover:bg-muted transition-colors group">
                         <div className="flex items-center gap-2">
-                          <section.icon className="size-5 text-muted-foreground" />
+                          <section.icon className="size-4 text-muted-foreground" />
                           <span className="truncate transition-all duration-300 group-data-[collapsed=true]:w-0 group-data-[collapsed=true]:opacity-0">
                             {section.title}
                           </span>
                         </div>
-                        <ChevronRight className="h-4 w-4 ml-auto transition-transform duration-200 group-data-[state=open]:rotate-90" />
+                        <ChevronRight className="size-4 ml-auto transition-transform duration-200 group-data-[state=open]:rotate-90" />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                   </SidebarMenuItem>
@@ -118,7 +163,7 @@ export function AppSidebar({ role }) {
                             className="flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-sm hover:bg-muted transition-colors"
                           >
                             {sub.icon && (
-                              <sub.icon className="h-4 w-4 text-muted-foreground" />
+                              <sub.icon className="size-4 text-muted-foreground" />
                             )}
                             <span className="truncate transition-all duration-300 group-data-[collapsed=true]:w-0 group-data-[collapsed=true]:opacity-0">
                               {sub.label}
@@ -136,7 +181,7 @@ export function AppSidebar({ role }) {
                       href={section.href}
                       className="flex items-center gap-2 w-full px-4 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
                     >
-                      <section.icon className="h-4 w-4 text-muted-foreground" />
+                      <section.icon className="size-4 text-muted-foreground" />
                       <span className="truncate transition-all duration-300 group-data-[collapsed=true]:w-0 group-data-[collapsed=true]:opacity-0">
                         {section.title}
                       </span>

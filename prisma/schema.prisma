@@ -85,7 +85,7 @@ model Merchant {
   type                  String?
   logoUrl               String?
   logoPublicId          String?
-  status                String?
+  status                String      @default("draft")
   visibility            String?
   geographicMarket      String?
   networkId             String?     @db.Uuid
@@ -109,6 +109,7 @@ model Merchant {
   iosAppUrl             String?
   windowsAppUrl         String?
 
+  offers      Offer[]
   formState   String   @default("draft") // "draft" | "completed"
   dateCreated DateTime @default(now())
   createdBy   String?
@@ -133,7 +134,7 @@ model HowToStep {
 
   stepNumber  Int // e.g., 1, 2, 3...
   title       String? // Optional short title like "Go to Website"
-  description String
+  description String?
   imageUrl    String? // Optional screenshot
 
   createdAt DateTime @default(now())
@@ -172,24 +173,89 @@ model MerchantType {
   updatedAt DateTime @updatedAt
 }
 
-model MerchantStatus {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model GeographicCountry {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  currencyCode   String   @unique // ISO codes like 'INR', 'USD'
+  currencySymbol String? // Optional, e.g. ₹ or $
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
-model GeographicMarket {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Category {
+  id              String     @id @default(uuid()) @db.Uuid
+  name            String
+  translatedName  String?
+  description     String?
+  icon            String?
+  country         String?
+  pageTitle       String?
+  metaDescription String?
+  metaKeywords    String[]
+  parentId        String?    @db.Uuid
+  parent          Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children        Category[] @relation("CategoryToCategory")
+  path            String     @default("") // "home/fashion/mens"
+  level           Int        @default(0)
+
+  offersCurrent Offer[]  @relation("CurrentCategories")
+  offersAdded   Offer[]  @relation("AddedCategories")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([path])
 }
 
-model Currency {
+model Offer {
+  id                String     @id @default(uuid()) @db.Uuid
+  offerReference    String?    @unique
+  imageUrl          String?
+  imagePublicId     String?
+  merchantId        String?    @db.Uuid
+  merchant          Merchant?  @relation(fields: [merchantId], references: [id])
+  offerType         String?
+  voucherCode       String?
+  currentCategories Category[] @relation("CurrentCategories")
+  addedCategories   Category[] @relation("AddedCategories")
+  status            String     @default("draft")
+  merchantOfferUrl  String?
+  offerClickUrl     String?
+
+  offerHeadline   String?
+  offerTitle      String?
+  idealFeedsTitle String?
+  discountType    String? // "Percentage" or "Fixed"
+  discountValue   Float?
+  description     String?
+  idealFeedsDesc  String?
+  termsConditions String?
+
+  minCartValue      Float?
+  brandRestrictions String?
+  userRestrictions  String?
+  startDate         DateTime?
+  endDate           DateTime?
+
+  displayOrder String? // e.g. "Default"
+  isExclusive  Boolean @default(false)
+  isFeatured   Boolean @default(false)
+  isHotDeal    Boolean @default(false)
+  isNewsletter Boolean @default(false)
+
+  country          String?
+  currency         String?
+  cashbackId       String? // If linked to a cashback table
+  commission       Float?
+  sharedCommission Float?
+
+  createdAt   DateTime @default(now())
+  createdBy   String?
+  ownerAgency String?
+}
+
+model offerType {
   id        String   @id @default(cuid())
-  code      String   @unique // ISO codes like 'INR', 'USD'
-  symbol    String? // Optional, e.g. ₹ or $
+  name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { verifyTokenWithLogout } from "@/utils/jwt";
 import prisma from "@/lib/prisma";
 
+const model = prisma.geographicCountry;
+
 export async function GET(req) {
   const token = req.cookies.get("authToken");
 
@@ -24,15 +26,13 @@ export async function GET(req) {
   }
 
   try {
-    const [merchantType] = await Promise.all([
-      prisma.merchantType.findMany({ orderBy: { name: "asc" } }),
-    ]);
+    const countries = await model.findMany({
+      orderBy: { name: "asc" },
+    });
 
     return NextResponse.json(
       {
-        data: {
-          merchantType,
-        },
+        countries,
         success: true,
       },
       { status: 200 }
@@ -45,42 +45,37 @@ export async function GET(req) {
   }
 }
 
-const modelMap = {
-  merchantType: prisma.merchantType,
-};
-
-const updateFieldsMap = {
-  merchantType: ["name"],
-};
-
 export async function POST(req) {
   try {
-    const { type, value } = await req.json();
+    const { id, name, currencyCode, currencySymbol } = await req.json();
 
-    if (!type || !value || !modelMap[type]) {
+    if (!name) {
       return NextResponse.json(
-        { message: "Invalid type or value", success: false },
+        { message: "Invalid request", success: false },
         { status: 400 }
       );
     }
 
-    const model = modelMap[type];
-    const updateFields = updateFieldsMap[type];
-
+    console.log(id, name, currencyCode, currencySymbol);
     let result;
 
-    if (value.id) {
+    if (id) {
       result = await model.update({
-        where: { id: value.id },
-        data: updateFields.reduce((acc, key) => {
-          if (value[key] !== undefined) acc[key] = value[key];
-          return acc;
-        }, {}),
+        where: { id },
+        data: {
+          name,
+          currencyCode: currencyCode ?? "",
+          currencySymbol: currencySymbol ?? "",
+        },
       });
     } else {
       try {
         result = await model.create({
-          data: value,
+          data: {
+            name,
+            currencyCode: currencyCode ?? "",
+            currencySymbol: currencySymbol ?? "",
+          },
         });
       } catch (err) {
         if (err.code === "P2002") {
@@ -105,22 +100,15 @@ export async function POST(req) {
 
 export async function DELETE(req) {
   try {
-    const { type, id } = await req.json();
+    const { id } = await req.json();
 
-    if (!type || !id || !modelMap[type]) {
+    if (!id) {
       return NextResponse.json(
         { message: "Invalid type or id", success: false },
         { status: 400 }
       );
     }
 
-    const model = modelMap[type];
-    if (!model) {
-      return NextResponse.json(
-        { message: "Invalid type", success: false },
-        { status: 400 }
-      );
-    }
     const result = await model.deleteMany({
       where: { id },
     });

@@ -24,14 +24,14 @@ export async function GET(req) {
   }
 
   try {
-    const [merchantType] = await Promise.all([
-      prisma.merchantType.findMany({ orderBy: { name: "asc" } }),
+    const [offerType] = await Promise.all([
+      prisma.offerType.findMany({ orderBy: { name: "asc" } }),
     ]);
 
     return NextResponse.json(
       {
         data: {
-          merchantType,
+          offerType,
         },
         success: true,
       },
@@ -46,11 +46,11 @@ export async function GET(req) {
 }
 
 const modelMap = {
-  merchantType: prisma.merchantType,
+  offerType: prisma.offerType,
 };
 
 const updateFieldsMap = {
-  merchantType: ["name"],
+  offerType: ["name"],
 };
 
 export async function POST(req) {
