@@ -179,7 +179,7 @@ function Page() {
         if (result.success) {
           if (merchantId === "new" && result.id) {
             setMerchantId(result.id);
-            router.replace(`/merchants/${result.id}`);
+            router.replace(`/works/merchants/${result.id}`);
           }
 
           const currentFormValues = getValues();
@@ -230,7 +230,7 @@ function Page() {
         .then((res) => res.json())
         .then((data) => {
           if (!data.success) {
-            router.replace("/merchants/new");
+            router.replace("/works/merchants/new");
             return;
           }
 
@@ -356,7 +356,7 @@ function Page() {
               : "Draft Saved"}
           </Badge>
           <Button variant="outline" asChild>
-            <Link href={"/merchants/config"}>Merchant Config</Link>
+            <Link href={"/works/merchants/config"}>Merchant Config</Link>
           </Button>
         </div>
       </div>

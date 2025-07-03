@@ -51,7 +51,7 @@ function Page() {
       result = await result.json();
       if (result.success) {
         console.log("successfully loggedin redirecting...");
-        router.replace("/");
+        router.replace("/works");
       } else {
         showError(result.message);
       }

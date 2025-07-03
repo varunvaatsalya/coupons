@@ -24,43 +24,43 @@ import {
   AlertCircle,
   Clock,
 } from "lucide-react";
+import { formatDateTimeToIST } from "@/utils/date";
+import { format } from "date-fns";
 
 function Page() {
-  const [merchants, setMerchants] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [dearftMerchantsCount, setDearftMerchantsCount] = useState(0);
-  const [networks, setNetworks] = useState([]);
-  const [merchantTypes, setMerchantTypes] = useState([]);
+  const [draftOffersCount, setDraftOffersCount] = useState(0);
+  const [merchants, setMerchants] = useState([]);
+  const [offerTypes, setOfferTypes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     name: "",
     type: "",
     status: "",
-    visibility: "",
-    networkId: "",
+    merchantId: "",
   });
 
   async function fetchData() {
     setIsLoading(true);
     const params = new URLSearchParams({
       page: page.toString(),
-      merchantName: filters.name,
+      codeorRef: filters.name,
       type: filters.type,
       status: filters.status,
-      visibility: filters.visibility,
-      networkId: filters.networkId,
+      merchantId: filters.merchantId,
     });
     try {
-      let result = await fetch(`/api/merchants?${params}`);
+      let result = await fetch(`/api/offers?${params}`);
       result = await result.json();
       if (result.success) {
-        setMerchants(result.merchants);
+        setOffers(result.offers);
         setTotalPages(result.totalPages);
         setPage(result.currentPage);
-        setDearftMerchantsCount((prev) => result.draftCount ?? prev);
-        setNetworks((prev) => result.networks ?? prev);
-        setMerchantTypes((prev) => result.merchantTypes ?? prev);
+        setDraftOffersCount((prev) => result.draftCount ?? prev);
+        setMerchants((prev) => result.merchants ?? prev);
+        setOfferTypes((prev) => result.offerTypes ?? prev);
       }
     } catch (err) {
       console.log("error: ", err);
@@ -71,41 +71,41 @@ function Page() {
   useEffect(() => {
     fetchData();
   }, [filters, page]);
+  
 
   return (
     <div className="h-[100dvh] w-full text-sm font-sans p-2 space-y-2">
       <div className="flex justify-between items-center gap-2">
-        <div className="font-bold text-xl px-2">Your Merchants</div>
+        <div className="font-bold text-xl px-2">Your Offers</div>
         <Button asChild className="flex items-center gap-1">
-          <Link href="/merchants/new">
+          <Link href="/works/offers/new">
             <IoIosAddCircleOutline />
-            <div>Add Merchant</div>
+            <div>Add Offer</div>
           </Link>
         </Button>
       </div>
-      <MerchantFilters
+      <OfferFilters
         filters={filters}
-        merchantTypes={merchantTypes}
-        networks={networks}
-        dearftMerchantsCount={dearftMerchantsCount}
+        offerTypes={offerTypes}
+        merchants={merchants}
+        draftOffersCount={draftOffersCount}
         onChange={setFilters}
       />
-      {dearftMerchantsCount > 0 && (
+      {draftOffersCount > 0 && (
         <div className="text-sm text-end px-3 text-muted-foreground">
-          {dearftMerchantsCount} : Draft Mechants
+          {draftOffersCount} : Draft Offers
         </div>
       )}
       <div className="rounded-md border overflow-hidden">
         {/* Header Row */}
         <div className="flex items-center px-4 py-2 border-b text-xs font-semibold bg-muted text-muted-foreground">
           <div className="w-8">#</div>
-          <div className="min-w-20 w-1/5">Name</div>
-          <div className="min-w-24 flex-1 hidden lg:block">Website</div>
+          <div className="min-w-20 w-1/5">Refrence Id</div>
+          <div className="min-w-24 flex-1 hidden lg:block">Merchant</div>
           <div className="w-24">Type</div>
           <div className="w-20 text-center">Status</div>
-          <div className="w-24 hidden md:block text-center">Visibility</div>
-          <div className="w-16 text-center">Offers</div>
-          <div className="w-24 text-center">Active Offers</div>
+          <div className="w-24 text-center">Start</div>
+          <div className="w-24 text-center">End</div>
           <div className="w-12 text-right pr-2">View</div>
         </div>
 
@@ -120,39 +120,37 @@ function Page() {
                 <div className="h-6 bg-muted-foreground/20 rounded w-full" />
               </div>
             ))
-          ) : merchants.length > 0 ? (
-            merchants.map((merchant, index) => (
+          ) : offers.length > 0 ? (
+            offers.map((offer, index) => (
               <div
-                key={merchant.id}
+                key={offer.id}
                 className="flex items-center px-4 py-2 border-b text-sm hover:bg-muted transition"
               >
                 <div className="w-8 text-xs text-muted-foreground">
                   {index + 1}
                 </div>
                 <div className="truncate min-w-20 w-1/5">
-                  {merchant.merchantName}
+                  {offer.offerReference}
                 </div>
                 <div className="truncate min-w-20 flex-1 hidden lg:block text-muted-foreground">
-                  {merchant.merchantUrl ?? "-"}
+                  {offer.merchant.merchantName ?? "-"}
                 </div>
-                <div className="w-24 text-xs truncate">{merchant.type}</div>
+                <div className="w-24 text-xs truncate">{offer.offerType}</div>
                 <div className="w-20 text-center">
-                  <StatusBadge status={merchant.status} />
+                  <StatusBadge status={offer.status} />
                 </div>
-                <div className="w-24 hidden md:block text-center">
-                  <VisibilityBadge visibility={merchant.visibility} />
+                <div className="w-24 text-center text-xs">
+                  {offer.startDate
+                    ? format(new Date(offer.startDate), "dd/MM/yyyy-HH:mm:ss")
+                    : "--"}
                 </div>
-                <div className="w-16 text-center">
-                  {merchant.offerCount ?? 0}
-                </div>
-                <div className="w-24 text-center">
-                  {merchant.activeOfferCount ?? 0}
+                <div className="w-24 text-center text-xs">
+                  {offer.endDate
+                    ? format(new Date(offer.endDate), "dd/MM/yyyy-HH:mm:ss")
+                    : "--"}
                 </div>
                 <div className="w-12 text-right pr-2">
-                  <Link
-                    href={`/merchants/${merchant.id}`}
-                    className="underline"
-                  >
+                  <Link href={`/works/offers/${offer.id}`} className="underline">
                     View
                   </Link>
                 </div>
@@ -160,7 +158,7 @@ function Page() {
             ))
           ) : (
             <div className="text-center px-4 py-2 border-b text-sm">
-              No Merchants Available
+              No Offers Available
             </div>
           )}
         </div>
@@ -193,11 +191,11 @@ function Page() {
 
 export default Page;
 
-function MerchantFilters({
+function OfferFilters({
   filters,
-  merchantTypes,
-  dearftMerchantsCount,
-  networks,
+  offerTypes,
+  draftOffersCount,
+  merchants,
   onChange,
 }) {
   return (
@@ -222,29 +220,10 @@ function MerchantFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="draft">
-                Draft ({dearftMerchantsCount})
-              </SelectItem>
+              <SelectItem value="draft">Draft ({draftOffersCount})</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.visibility}
-            onValueChange={(val) =>
-              onChange({ ...filters, visibility: val === "all" ? "" : val })
-            }
-          >
-            <SelectTrigger className="col-span-1">
-              <SelectValue placeholder="Visibility" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="public">Public</SelectItem>
-              <SelectItem value="premium">Premium</SelectItem>
-              <SelectItem value="private">Private</SelectItem>
+              <SelectItem value="closed">Expired</SelectItem>
             </SelectContent>
           </Select>
 
@@ -259,7 +238,7 @@ function MerchantFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {merchantTypes.map((type) => (
+              {offerTypes.map((type) => (
                 <SelectItem key={type.id} value={type.name}>
                   {type.name}
                 </SelectItem>
@@ -268,19 +247,19 @@ function MerchantFilters({
           </Select>
 
           <Select
-            value={filters.networkId}
+            value={filters.merchantId}
             onValueChange={(val) =>
-              onChange({ ...filters, networkId: val === "all" ? "" : val })
+              onChange({ ...filters, merchantId: val === "all" ? "" : val })
             }
           >
             <SelectTrigger className="col-span-1">
-              <SelectValue placeholder="Netowks" />
+              <SelectValue placeholder="Merchants" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              {networks.map((network) => (
-                <SelectItem key={network.id} value={network.id}>
-                  {network.name}
+              {merchants.map((merchant) => (
+                <SelectItem key={merchant.id} value={merchant.id}>
+                  {merchant.merchantName}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -301,7 +280,7 @@ function StatusBadge({ status }) {
       color: "bg-yellow-100 text-yellow-800",
       icon: <Clock className="h-3 w-3" />,
     },
-    closed: {
+    expired: {
       color: "bg-gray-200 text-gray-700",
       icon: <Ban className="h-3 w-3" />,
     },
@@ -320,41 +299,6 @@ function StatusBadge({ status }) {
     <Badge className={`capitalize gap-1 px-2 py-1 ${item.color}`}>
       {item.icon}
       {status}
-    </Badge>
-  ) : (
-    <span>--</span>
-  );
-}
-
-function VisibilityBadge({ visibility }) {
-  const map = {
-    public: {
-      color: "bg-green-50 text-green-700",
-      icon: <Eye className="h-3 w-3" />,
-    },
-    private: {
-      color: "bg-gray-100 text-gray-700",
-      icon: <Lock className="h-3 w-3" />,
-    },
-    premium: {
-      color: "bg-yellow-50 text-yellow-800",
-      icon: <Star className="h-3 w-3 fill-yellow-500" />,
-    },
-    draft: {
-      color: "bg-blue-50 text-blue-700",
-      icon: <EyeOff className="h-3 w-3" />,
-    },
-  };
-
-  const item = map[visibility] || {
-    color: "bg-muted text-muted-foreground",
-    icon: <Eye className="h-3 w-3" />,
-  };
-
-  return visibility ? (
-    <Badge className={`capitalize gap-1 px-2 py-1 ${item.color}`}>
-      {item.icon}
-      {visibility}
     </Badge>
   ) : (
     <span>--</span>

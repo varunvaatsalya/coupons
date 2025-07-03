@@ -130,7 +130,7 @@ function Page() {
         if (result.success) {
           if (offerId === "new" && result.id) {
             setOfferId(result.id);
-            router.replace(`/offers/${result.id}`);
+            router.replace(`/works/offers/${result.id}`);
           }
 
           const currentFormValues = getValues();
@@ -178,7 +178,7 @@ function Page() {
         .then((data) => {
           if (!data.success) {
             showError(data.message);
-            router.replace("/offers/new");
+            router.replace("/works/offers/new");
             return;
           }
 
@@ -275,7 +275,7 @@ function Page() {
               : "Draft Saved"}
           </Badge>
           <Button variant="outline" asChild>
-            <Link href={"/offers/config"}>Offer Config</Link>
+            <Link href={"/works/offers/config"}>Offer Config</Link>
           </Button>
         </div>
       </div>

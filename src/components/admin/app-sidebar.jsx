@@ -36,45 +36,45 @@ const sidebarSections = [
     title: "Dashboard",
     icon: LuLayoutDashboard,
     roles: ["admin", "owner"],
-    href: "/dashboard",
+    href: "/works/dashboard",
   },
   {
     title: "Merchants",
     icon: LayoutPanelLeft,
     roles: ["admin", "owner"],
-    href: "/merchants",
+    href: "/works/merchants",
   },
   {
     title: "Networks",
     icon: Network,
     roles: ["admin", "owner"],
-    href: "/networks",
+    href: "/works/networks",
   },
   {
     title: "Country",
     icon: Globe,
     roles: ["admin", "owner"],
-    href: "/country",
+    href: "/works/country",
   },
   {
     title: "Category",
     icon: ListTreeIcon,
     roles: ["admin", "owner"],
-    href: "/category",
+    href: "/works/category",
   },
   {
     title: "Offers",
     icon: BadgePercent,
     roles: ["admin", "owner"],
-    href: "/offers",
+    href: "/works/offers",
   },
   {
     title: "Site Management",
     icon: MonitorCog,
     roles: ["admin"],
     items: [
-      { label: "Calendar", icon: LuLayoutDashboard, href: "/roles" },
-      { label: "General Settings", icon: LuLayoutDashboard, href: "/setings" },
+      { label: "Calendar", icon: LuLayoutDashboard, href: "/works/roles" },
+      { label: "General Settings", icon: LuLayoutDashboard, href: "/works/setings" },
     ],
   },
   {
@@ -82,8 +82,8 @@ const sidebarSections = [
     icon: LetterText,
     roles: ["admin"],
     items: [
-      { label: "Calendar", icon: LuLayoutDashboard, href: "/roles" },
-      { label: "General Settings", icon: LuLayoutDashboard, href: "/setings" },
+      { label: "Calendar", icon: LuLayoutDashboard, href: "/works/roles" },
+      { label: "General Settings", icon: LuLayoutDashboard, href: "/works/setings" },
     ],
   },
   {
@@ -91,27 +91,27 @@ const sidebarSections = [
     icon: FileChartColumn,
     roles: ["admin"],
     items: [
-      { label: "Calendar", icon: LuLayoutDashboard, href: "/roles" },
-      { label: "General Settings", icon: LuLayoutDashboard, href: "/setings" },
+      { label: "Calendar", icon: LuLayoutDashboard, href: "/works/roles" },
+      { label: "General Settings", icon: LuLayoutDashboard, href: "/works/setings" },
     ],
   },
   {
     title: "Role Management",
     icon: UserRoundCog,
     roles: ["admin"],
-    href: "/roles",
+    href: "/works/roles",
   },
   {
     title: "Security",
     icon: UserRoundCog,
     roles: ["admin"],
-    href: "/security",
+    href: "/works/security",
   },
   {
     title: "Settings",
     icon: Settings,
     roles: ["admin", "owner"],
-    href: "/settings",
+    href: "/works/settings",
   },
 ];
 

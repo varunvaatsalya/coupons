@@ -1,0 +1,13 @@
+export const revalidate = 60 // page will refresh every 60 seconds on server
+if (!data) {
+  notFound() // Next.js built-in
+}
+export const metadata = {
+  title: "Admin Panel",
+  robots: "noindex, nofollow"
+}  // app/works/head.tsx
+
+/public/robots.txt:
+
+User-agent: *
+Disallow: /works
