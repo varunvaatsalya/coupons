@@ -48,8 +48,8 @@ export async function middleware(req) {
 
   if (!alreadyHasCountry && !isApiOrAssets && !isAdminRoute) {
     // const country = req.geo?.country?.toLowerCase();
-    const country = request.headers.get('x-vercel-ip-country');
-    // const country = req.geo?.country?.toLowerCase() || "in";
+    // const country = request.headers.get('x-vercel-ip-country');
+    const country = req.geo?.country?.toLowerCase() || "in";
 
     if (country && PUBLIC_COUNTRIES.includes(country)) {
       return NextResponse.redirect(new URL(`/${country}${pathname}`, req.url));
