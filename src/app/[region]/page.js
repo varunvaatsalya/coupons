@@ -1,7 +1,6 @@
 "use client";
 import { BsStars } from "react-icons/bs";
 import React from "react";
-import { FaAngleDown } from "react-icons/fa";
 import { CarouselImages } from "../../components/public/ImageCarousel";
 import handIcon from "./assets/icon-hand-heart.svg";
 import Image from "next/image";
@@ -10,46 +9,12 @@ import img1 from "./assets/img1.jpg";
 import img2 from "./assets/img2.jpg";
 import Header from "@/components/public/Header";
 import Navbar from "@/components/public/Navbar";
+import Footer from "@/components/public/Footer";
+import { usePathname } from "next/navigation";
 
 function Page() {
-  const NavItems = [
-    {
-      id: 0,
-      label: "Trending",
-      isDropdown: true,
-    },
-    {
-      id: 1,
-      label: "Categories",
-      isDropdown: true,
-    },
-    {
-      id: 2,
-      label: "VIP",
-      isDropdown: false,
-    },
-    {
-      id: 3,
-      label: "Savings Guides",
-      isDropdown: true,
-    },
-    {
-      id: 4,
-      label: "Code Guarantee",
-      isDropdown: false,
-    },
-    {
-      id: 5,
-      label: "App",
-      isDropdown: false,
-    },
-    {
-      id: 6,
-      label: "DealFinder",
-      isDropdown: false,
-    },
-  ];
-  console.log(img1);
+  const pathname = usePathname();
+
   return (
     <main className="">
       <div className="p-2 text-center font-bold bg-[#001b22] text-gray-50 flex flex-wrap items-center justify-center">
@@ -59,20 +24,8 @@ function Page() {
         </span>
       </div>
       <Header />
-      <div className="bg-teal-50 border-b border-t border-t-gray-100 relative">
-        <div className="scroller flex items-center max-w-6xl mx-auto overflow-x-auto p-3 text-sm font-bold">
-          {NavItems.map((item) => (
-            <div
-              key={item.id}
-              className="text-nowrap mr-6 sm:mr-8 lg:mr-10 flex items-center border-b-3 border-transparent hover:border-gray-950"
-            >
-              <div>{item.label}</div>
-              {item.isDropdown && <FaAngleDown className="size-3" />}
-            </div>
-          ))}
-        </div>
-        <div className="absolute right-0 top-0 w-6 h-full bg-gradient-to-l from-gray-400/[0.6] lg:from-transparent to-transparent"></div>
-      </div>
+      <Navbar />
+
       <CarouselImages />
       <div className="p-2 flex justify-around gap-4 items-center bg-teal-300 mb-10">
         <div className="flex flex-col md:flex-row items-center gap-2">
@@ -128,7 +81,7 @@ function Page() {
               Today's Top Offers
             </h3>
             <Link
-              href={"/categories"}
+              href={`${pathname}/categories`}
               className="absolute right-0 text-xs md:text-base font-bold hover:underline"
             >
               View All Top Offers
@@ -187,7 +140,7 @@ function Page() {
               Top Categories
             </h3>
             <Link
-              href={"/categories"}
+              href={`${pathname}/categories`}
               className="absolute right-0 text-xs md:text-base font-bold hover:underline"
             >
               View All Categories
@@ -216,7 +169,7 @@ function Page() {
               Today's Top Restaurents
             </h3>
             <Link
-              href={"/categories"}
+              href={`${pathname}/adidas`}
               className="absolute right-0 text-xs md:text-base font-bold hover:underline"
             >
               View All Top Restaurents
@@ -262,7 +215,7 @@ function Page() {
               Today's Top Restaurents
             </h3>
             <Link
-              href={"/categories"}
+              href={`${pathname}/categories`}
               className="absolute right-0 text-xs md:text-base font-bold hover:underline"
             >
               View All Top Restaurents
@@ -308,7 +261,7 @@ function Page() {
               Today's Top Restaurents
             </h3>
             <Link
-              href={"/categories"}
+              href={`${pathname}/categories`}
               className="absolute right-0 text-xs md:text-base font-bold hover:underline"
             >
               View All Top Restaurents
@@ -349,7 +302,7 @@ function Page() {
           </div>
         </div>
       </div>
-      <Navbar />
+      <Footer />
     </main>
   );
 }

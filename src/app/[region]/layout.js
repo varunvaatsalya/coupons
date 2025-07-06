@@ -3,7 +3,7 @@ import { Nunito } from "next/font/google";
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900", ],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -14,7 +14,9 @@ export const metadata = {
 
 export default async function Layout({ children }) {
   return (
-    <div className={`${nunito.className} antialiased bg-gray-50 text-gray-950 selection:bg-teal-100`}>
+    <div
+      className={`${nunito.className} antialiased bg-gray-100 text-gray-950 selection:bg-teal-100`}
+    >
       {children}
     </div>
   );
