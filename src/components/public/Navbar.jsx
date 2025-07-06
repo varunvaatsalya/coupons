@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { FaAngleDown, FaAngleRight } from "react-icons/fa";
 import { FaArrowLeft } from "react-icons/fa6";
@@ -113,7 +114,10 @@ function Navbar() {
       <div className="absolute right-0 top-0 w-5 h-full bg-gradient-to-l from-gray-400/[0.6] lg:from-transparent to-transparent"></div>
       {openDropdown && (
         <div className="absolute w-full top-full z-40">
-          <div className="bg-white max-w-6xl mx-auto p-4 shadow-md rounded-b-lg" ref={dropdownRef}>
+          <div
+            className="bg-white max-w-6xl mx-auto p-4 shadow-md rounded-b-lg"
+            ref={dropdownRef}
+          >
             <NavbarDropdownContent activeItem={activeNavItem} />
           </div>
         </div>
@@ -130,14 +134,14 @@ const NavbarDropdownContent = ({ activeItem }) => {
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 gap-y-6">
         {["Amazon", "Flipkart", "Meesho", "Ajio", "Nykaa", "Snapdeal"].map(
           (company, index) => (
-            <a
+            <Link
               key={index}
-              href="#"
+              href="/in/adidas"
               className="block text-sm text-teal-600 font-semibold hover:underline truncate"
               title={company}
             >
               {company}
-            </a>
+            </Link>
           )
         )}
       </div>
@@ -332,12 +336,11 @@ const CategorySubcategoryPanel = ({ categories }) => {
 
               <div>
                 {selectedCategory.subcategories.map((sub, i) => (
-                  <div
-                    key={i}
-                    className="px-4 py-3 border-b text-gray-700 hover:bg-gray-100"
-                  >
-                    {sub}
-                  </div>
+                  <Link key={i} href="/in/categories/fashion/mens">
+                    <div className="px-4 py-3 border-b text-gray-700 hover:bg-gray-100">
+                      {sub}
+                    </div>
+                  </Link>
                 ))}
               </div>
             </>

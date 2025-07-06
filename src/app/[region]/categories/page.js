@@ -1,4 +1,4 @@
-// "use client"
+"use client"
 import Footer from "@/components/public/Footer";
 import Header from "@/components/public/Header";
 import Navbar from "@/components/public/Navbar";
@@ -6,11 +6,11 @@ import Image from "next/image";
 import React from "react";
 import img5 from "@/app/[region]/assets/fashion.avif";
 import Link from "next/link";
-
-// mongodump --uri="mongodb+srv://umdaiot:3aslK6ayLaBBX8if@cluster0.grizw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" --out=backup
-// mongorestore --drop --uri="mongodb://admin:a229457d51fd5ea0b09b354cdafb9ccc6ca39a3822d23370@139.59.56.102/hms?retryWrites=true&w=majority&appName=Cluster0" backup\test
+import { usePathname } from "next/navigation";
 
 function Page() {
+  const pathname = usePathname();
+
   return (
     <div className="w-full bg-gray-100">
       <Header />
@@ -24,7 +24,7 @@ function Page() {
           money. You'll get access to the very best discounts for everything
           from flights and fashion to your next home and garden purchase!
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
           {Array.from({ length: 8 }).map((_, index) => (
             <div
@@ -40,9 +40,11 @@ function Page() {
                   className="object-cover object-center"
                 />
               </div>
-              <div className="p-4 space-y-3">
+              <div className="p-4 flex flex-col gap-y-3">
                 {Array.from({ length: index + 2 }).map((_, index) => (
-                  <Link href="" key={index * 5}>Fashion</Link>
+                  <Link href={`${pathname}/adidas`} className="hover:underline underline-offset-1 text-teal-500" key={index * 5}>
+                    Fashion
+                  </Link>
                 ))}
               </div>
             </div>
