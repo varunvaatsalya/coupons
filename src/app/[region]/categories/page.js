@@ -4,7 +4,7 @@ import Header from "@/components/public/Header";
 import Navbar from "@/components/public/Navbar";
 import Image from "next/image";
 import React from "react";
-import img5 from "@/app/[region]/assets/fashion.avif";
+import img5 from "@/app/[region]/assets/img1.jpg";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -31,13 +31,13 @@ function Page() {
               key={index}
               className="w-full bg-white shadow-lg rounded-lg overflow-hidden"
             >
-              <div className="w-full h-40">
+              <div className="w-full h-40 overflow-hidden">
                 <Image
                   src={img5}
                   alt="hii"
                   width={500}
                   height={500}
-                  className="object-cover object-center"
+                  className="object-cover object-bottom"
                 />
               </div>
               <div className="p-4 flex flex-col gap-y-3">
