@@ -13,19 +13,15 @@ import {
 } from "@/components/ui/select";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import {
-  EyeIcon,
-  Eye,
-  EyeOff,
-  Lock,
-  Star,
   Circle,
   Ban,
   CheckCircle,
   AlertCircle,
   Clock,
+  Lock,
 } from "lucide-react";
-import { formatDateTimeToIST } from "@/utils/date";
 import { format } from "date-fns";
+import { getOfferStatus } from "@/utils/offerStatus";
 
 function Page() {
   const [offers, setOffers] = useState([]);
@@ -71,7 +67,6 @@ function Page() {
   useEffect(() => {
     fetchData();
   }, [filters, page]);
-  
 
   return (
     <div className="h-[100dvh] w-full text-sm font-sans p-2 space-y-2">
@@ -136,22 +131,52 @@ function Page() {
                   {offer.merchant.merchantName ?? "-"}
                 </div>
                 <div className="w-24 text-xs truncate">{offer.offerType}</div>
-                <div className="w-20 text-center">
-                  <StatusBadge status={offer.status} />
+                <div className="w-20 flex items-center justify-center gap-1">
+                  <StatusBadge
+                    status={
+                      offer.statusManual === "auto"
+                        ? getOfferStatus(offer.startDate, offer.endDate)
+                        : offer.statusManual
+                    }
+                  />
+                  {(offer.statusManual === "inactive" ||
+                    offer.statusManual === "closed") && (
+                    <span title={`Manually ${offer.statusManual}`}>
+                      <Lock className="size-4 text-muted-foreground" />
+                    </span>
+                  )}
                 </div>
-                <div className="w-24 text-center text-xs">
-                  {offer.startDate
-                    ? format(new Date(offer.startDate), "dd/MM/yyyy-HH:mm:ss")
-                    : "--"}
+
+                <div className="w-24 text-center text-[10px] font-semibold ">
+                  {offer.startDate ? (
+                    <>
+                      {format(new Date(offer.startDate), "dd MMM yy")}
+                      <br />
+                      {format(new Date(offer.startDate), "hh:mm a")}
+                    </>
+                  ) : (
+                    "--"
+                  )}
                 </div>
-                <div className="w-24 text-center text-xs">
-                  {offer.endDate
-                    ? format(new Date(offer.endDate), "dd/MM/yyyy-HH:mm:ss")
-                    : "--"}
+                <div className="w-24 text-center text-[10px] font-semibold ">
+                  {offer.endDate ? (
+                    <>
+                      {format(new Date(offer.endDate), "dd MMM yy")}
+                      <br />
+                      {format(new Date(offer.endDate), "hh:mm a")}
+                    </>
+                  ) : (
+                    "--"
+                  )}
                 </div>
                 <div className="w-12 text-right pr-2">
-                  <Link href={`/works/offers/${offer.id}`} className="underline">
-                    View
+                  <Link
+                    href={`/works/offers/${offer.id}${
+                      offer.status !== "draft" ? "/view" : ""
+                    }`}
+                    className="underline"
+                  >
+                    {offer.status !== "draft" ? "View" : "Edit"}
                   </Link>
                 </div>
               </div>
@@ -221,6 +246,7 @@ function OfferFilters({
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="draft">Draft ({draftOffersCount})</SelectItem>
+              <SelectItem value="auto">Auto</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
               <SelectItem value="closed">Expired</SelectItem>

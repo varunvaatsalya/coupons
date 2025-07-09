@@ -30,6 +30,9 @@ model User {
   isLogoutPending   Boolean?  @default(false)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @default(now()) @updatedAt
+
+  merchantsCreated Merchant[] @relation("CreatedMerchants")
+  offersCreated Offer[] @relation("CreatedOffers")
 }
 
 enum Role {
@@ -109,10 +112,12 @@ model Merchant {
   iosAppUrl             String?
   windowsAppUrl         String?
 
-  offers      Offer[]
-  formState   String   @default("draft") // "draft" | "completed"
-  dateCreated DateTime @default(now())
-  createdBy   String?
+  offers        Offer[]
+  formState     String   @default("draft") // "draft" | "submitted"
+  dateCreated   DateTime @default(now())
+  createdByRole String?
+  createdById   String?  @db.Uuid
+  createdBy     User?    @relation("CreatedMerchants", fields: [createdById], references: [id])
 }
 
 // ------------------- Network Model -------------------
@@ -217,7 +222,7 @@ model Offer {
   voucherCode       String?
   currentCategories Category[] @relation("CurrentCategories")
   addedCategories   Category[] @relation("AddedCategories")
-  status            String     @default("draft")
+  statusManual      String?     @default("draft")
   merchantOfferUrl  String?
   offerClickUrl     String?
 
@@ -248,9 +253,12 @@ model Offer {
   commission       Float?
   sharedCommission Float?
 
-  createdAt   DateTime @default(now())
-  createdBy   String?
   ownerAgency String?
+  createdAt   DateTime @default(now())
+  createdByRole String?
+  createdById   String?  @db.Uuid
+  createdBy     User?    @relation("CreatedOffers", fields: [createdById], references: [id])
+
 }
 
 model offerType {

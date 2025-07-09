@@ -99,7 +99,7 @@ export async function POST(req) {
         user: {
           id: admin.id,
           email: admin.email,
-          role: admin.role,
+          role,
           editPermission: true,
         },
         success: true,

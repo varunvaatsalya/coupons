@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,18 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IoIosAddCircleOutline } from "react-icons/io";
-import {
-  EyeIcon,
-  Eye,
-  EyeOff,
-  Lock,
-  Star,
-  Circle,
-  Ban,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-} from "lucide-react";
+import { StatusBadge, VisibilityBadge } from "@/components/parts/Badges";
 
 function Page() {
   const [merchants, setMerchants] = useState([]);
@@ -150,10 +138,12 @@ function Page() {
                 </div>
                 <div className="w-12 text-right pr-2">
                   <Link
-                    href={`/works/merchants/${merchant.id}`}
+                    href={`/works/merchants/${merchant.id}${
+                      merchant.status !== "draft" ? "/view" : ""
+                    }`}
                     className="underline"
                   >
-                    View
+                    {merchant.status !== "draft" ? "View" : "Edit"}
                   </Link>
                 </div>
               </div>
@@ -288,75 +278,5 @@ function MerchantFilters({
         </div>
       </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const map = {
-    active: {
-      color: "bg-green-100 text-green-700",
-      icon: <CheckCircle className="h-3 w-3" />,
-    },
-    inactive: {
-      color: "bg-yellow-100 text-yellow-800",
-      icon: <Clock className="h-3 w-3" />,
-    },
-    closed: {
-      color: "bg-gray-200 text-gray-700",
-      icon: <Ban className="h-3 w-3" />,
-    },
-    draft: {
-      color: "bg-blue-100 text-blue-700",
-      icon: <AlertCircle className="h-3 w-3" />,
-    },
-  };
-
-  const item = map[status] || {
-    color: "bg-muted text-muted-foreground",
-    icon: <Circle className="h-3 w-3" />,
-  };
-
-  return status ? (
-    <Badge className={`capitalize gap-1 px-2 py-1 ${item.color}`}>
-      {item.icon}
-      {status}
-    </Badge>
-  ) : (
-    <span>--</span>
-  );
-}
-
-function VisibilityBadge({ visibility }) {
-  const map = {
-    public: {
-      color: "bg-green-50 text-green-700",
-      icon: <Eye className="h-3 w-3" />,
-    },
-    private: {
-      color: "bg-gray-100 text-gray-700",
-      icon: <Lock className="h-3 w-3" />,
-    },
-    premium: {
-      color: "bg-yellow-50 text-yellow-800",
-      icon: <Star className="h-3 w-3 fill-yellow-500" />,
-    },
-    draft: {
-      color: "bg-blue-50 text-blue-700",
-      icon: <EyeOff className="h-3 w-3" />,
-    },
-  };
-
-  const item = map[visibility] || {
-    color: "bg-muted text-muted-foreground",
-    icon: <Eye className="h-3 w-3" />,
-  };
-
-  return visibility ? (
-    <Badge className={`capitalize gap-1 px-2 py-1 ${item.color}`}>
-      {item.icon}
-      {visibility}
-    </Badge>
-  ) : (
-    <span>--</span>
   );
 }

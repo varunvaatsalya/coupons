@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { verifyTokenWithLogout } from "@/utils/jwt";
 
 export async function GET(req) {
+  let id = req.nextUrl.searchParams.get("id");
   const { searchParams } = new URL(req.url);
   const token = req.cookies.get("authToken");
 
@@ -25,6 +26,33 @@ export async function GET(req) {
   }
 
   try {
+    if (id) {
+      // console.log(id);
+      let offer = null;
+      let message = "";
+      try {
+        offer = await prisma.offer.findUnique({
+          where: { id },
+          include: {
+            merchant: { select: { merchantName: true } },
+            currentCategories: { select: { path: true } },
+            addedCategories: { select: { path: true } },
+          },
+        });
+      } catch (error) {
+        console.log("offer docs not found using id:", id);
+        console.log(error);
+        message += "Offer Not found!";
+      }
+      return NextResponse.json(
+        {
+          offer,
+          message,
+          success: offer ? true : false,
+        },
+        { status: offer ? 200 : 404 }
+      );
+    }
     const page = parseInt(searchParams.get("page")) || 1;
     const take = 25;
     const skip = (page - 1) * take;
@@ -44,7 +72,34 @@ export async function GET(req) {
         { offerReference: { contains: codeorRef, mode: "insensitive" } },
       ];
     }
-    if (status) where.status = status;
+
+    const now = new Date();
+
+    if (status === "draft") {
+      where.statusManual = "draft";
+    } else if (status === "inactive") {
+      where.OR = [
+        { statusManual: "inactive" },
+        {
+          statusManual: "auto",
+          startDate: { gt: now },
+        },
+      ];
+    } else if (status === "active") {
+      where.statusManual = "auto";
+      where.startDate = { lte: now };
+      where.endDate = { gte: now };
+    } else if (status === "closed") {
+      where.OR = [
+        { statusManual: "closed" },
+        {
+          statusManual: "auto",
+          endDate: { lt: now },
+        },
+      ];
+    } else if (status === "auto") {
+      where.statusManual = "auto";
+    }
     if (merchantId) where.merchantId = merchantId;
 
     // Get filtered merchants (paginated)
@@ -54,7 +109,7 @@ export async function GET(req) {
         id: true,
         offerReference: true,
         offerType: true,
-        status: true,
+        statusManual: true,
         startDate: true,
         endDate: true,
         merchant: {
@@ -79,7 +134,7 @@ export async function GET(req) {
     // Draft merchant count (unfiltered)
     if (Object.keys(where).length === 0) {
       draftCount = await prisma.offer.count({
-        where: { status: "draft" },
+        where: { statusManual: "draft" },
       });
 
       // All networks (for dropdown)
@@ -107,7 +162,7 @@ export async function GET(req) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Merchant fetch error:", error);
+    console.error("Offer fetch error:", error);
     return NextResponse.json(
       { success: false, message: "Server error" },
       { status: 500 }

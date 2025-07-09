@@ -22,6 +22,48 @@ import { RiLoader3Line } from "react-icons/ri";
 import { IoCloudDoneOutline } from "react-icons/io5";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+const OFFER_FIELD_NAME = {
+  offerReference: "Offer Reference",
+  merchantId: "Merchant", // prefilled if merchant selected
+  offerType: "Offer Type", // or "discount", "cashback" etc.
+  voucherCode: "Voucher Code",
+  currentCategories: "Categories", // [{id, name}]
+  // addedCategories: [], // array of category IDs
+  statusManual: "Status",
+  merchantOfferUrl: "merchantOfferUrl",
+  offerClickUrl: "Offer Click Url",
+  offerHeadline: "Offer Headline",
+  offerTitle: "Offer Title",
+  idealFeedsTitle: "ideal Feeds Title",
+  discountType: "Discount Type", // "Percentage" or "Fixed"
+  discountValue: "Discount Value",
+  description: "Description",
+  idealFeedsDesc: "idealFeeds Description",
+  termsConditions: "T&C",
+  minCartValue: "min Cart Value",
+  brandRestrictions: "brand Restrictions",
+  userRestrictions: "User Restrictions",
+  startDate: "Start Date", // date pickers
+  endDate: "End Date",
+  displayOrder: "Display Order",
+  isExclusive: "Exclusive",
+  isFeatured: "Featured",
+  isHotDeal: "HotDeal",
+  isNewsletter: "Newsletter",
+  country: "Country",
+  currency: "Currency",
+  cashbackId: "Cashback Id",
+  commission: "Commission",
+  sharedCommission: "Shared Commission",
+};
 
 function Page() {
   const router = useRouter();
@@ -31,7 +73,7 @@ function Page() {
   const [offerId, setOfferId] = useState(params.offerId);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
   const [apiCallEnabled, setApiCallEnabled] = useState(true);
-  const [isLogoDeleting, setIsLogoDeleting] = useState(false);
+  // const [isLogoDeleting, setIsLogoDeleting] = useState(false);
   const [urlGenerating, setUrlGenerating] = useState(false);
   const [formOptions, setFormOptions] = useState({
     merchants: [],
@@ -53,8 +95,8 @@ function Page() {
         offerType: "", // or "discount", "cashback" etc.
         voucherCode: "",
         currentCategories: [], // [{id, name}]
-        addedCategories: [], // array of category IDs
-        status: "draft",
+        // addedCategories: [], // array of category IDs
+        statusManual: "draft",
         merchantOfferUrl: "",
         offerClickUrl: "",
         offerHeadline: "",
@@ -80,7 +122,6 @@ function Page() {
         cashbackId: "",
         commission: 0,
         sharedCommission: 0,
-        createdBy: "",
         ownerAgency: "",
       },
     }
@@ -231,8 +272,37 @@ function Page() {
     return localDate.toISOString().slice(0, 16);
   };
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log(data);
+    setCreating(true);
+    try {
+      const res = await fetch("/api/offers/newOffer?formSubmitted=1", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        router.replace(`/works/offers/${result.id}/view`);
+      } else {
+        showError(result.message);
+        setApiCallEnabled(false);
+      }
+    } catch (err) {
+      console.error("Failed to save:", err);
+      setApiCallEnabled(false);
+      showError("Failed to save offer.");
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+      retryTimeoutRef.current = setTimeout(() => {
+        setApiCallEnabled(true);
+        retryTimeoutRef.current = null;
+      }, 30000);
+    } finally {
+      setCreating(false);
+    }
   };
 
   if (!initialDataLoaded) {
@@ -293,10 +363,13 @@ function Page() {
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>2.</div>
-          <div>Image Url</div>
+          <div>
+            Image Url <span className="text-red-700">(Disabled)</span>
+          </div>
         </label>
         <Input
           className="col-span-9"
+          disabled
           {...register("imageUrl")}
           placeholder="e.g. https://hdbwk.com/img"
         />
@@ -304,7 +377,9 @@ function Page() {
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>3.</div>
-          <div>Merchant</div>
+          <div>
+            Merchant<span className="text-red-500">*</span>
+          </div>
         </label>
         <Select
           value={watch("merchantId") || ""}
@@ -316,11 +391,26 @@ function Page() {
             <SelectValue placeholder="Select Merchant" />
           </SelectTrigger>
           <SelectContent>
-            {formOptions?.merchants?.map((type) => (
-              <SelectItem key={type.id} value={type.id}>
-                {type.merchantName}
-              </SelectItem>
-            ))}
+            {formOptions?.merchants?.map((merchant) => {
+              const isDisabled =
+                merchant.status !== "active" ||
+                merchant.visibility === "draft" ||
+                merchant.visibility === "private";
+
+              return (
+                <SelectItem
+                  key={merchant.id}
+                  value={merchant.id}
+                  disabled={isDisabled}
+                >
+                  {merchant.merchantName}
+                  {merchant.status !== "active" && ` (${merchant.status})`}
+                  {(merchant.visibility === "draft" ||
+                    merchant.visibility === "private") &&
+                    ` (${merchant.visibility})`}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
       </div>
@@ -350,7 +440,9 @@ function Page() {
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>5.</div>
-          <div>Voucher Code</div>
+          <div>
+            Voucher Code<span className="text-red-500">*</span>
+          </div>
         </label>
         <Input
           className="col-span-9"
@@ -377,16 +469,16 @@ function Page() {
           <div>Status</div>
         </label>
         <Select
-          value={watch("status") || ""}
+          value={watch("statusManual") || ""}
           onValueChange={(val) => {
-            setValue("status", val);
+            setValue("statusManual", val);
           }}
         >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select offer type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="auto">Auto</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>
             <SelectItem value="expired">Expired</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
@@ -562,12 +654,17 @@ function Page() {
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>21.</div>
-          <div>Start Date</div>
+          <div>
+            Start Date<span className="text-red-500">*</span>
+          </div>
         </label>
         <Input
           type="datetime-local"
           value={
             watch("startDate") ? formatDateToInput(watch("startDate")) : ""
+          }
+          max={
+            watch("endDate") ? formatDateToInput(watch("endDate")) : undefined
           }
           onChange={(e) => {
             const val = e.target.value;
@@ -580,17 +677,24 @@ function Page() {
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>22.</div>
-          <div>End Date</div>
+          <div>
+            End Date<span className="text-red-500">*</span>
+          </div>
         </label>
         <Input
           type="datetime-local"
-          className="col-span-9"
           value={watch("endDate") ? formatDateToInput(watch("endDate")) : ""}
+          min={
+            watch("startDate")
+              ? formatDateToInput(watch("startDate"))
+              : undefined
+          }
           onChange={(e) => {
             const val = e.target.value;
             const iso = val ? new Date(val).toISOString() : null;
             setValue("endDate", iso);
           }}
+          className="col-span-9"
         />
       </div>
       <div className="grid grid-cols-12 gap-4 items-center">
@@ -696,7 +800,6 @@ function Page() {
           onValueChange={(val) => {
             setValue("currency", val);
           }}
-          // {...register("offerType")}
         >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select Currency" />
@@ -747,9 +850,7 @@ function Page() {
           placeholder="Enter shared commission amount"
         />
       </div>
-      <div className="flex justify-end items-center p-6">
-        <Button type="submit">Save Offer</Button>
-      </div>
+      <ConfirmDialog onConfirm={handleSubmit(onSubmit)} getValues={getValues} />
     </form>
   );
 }
@@ -833,5 +934,74 @@ function CategorySelector({ selected = [], onChange, label }) {
         )}
       </div>
     </div>
+  );
+}
+
+function ConfirmDialog({ onConfirm, getValues }) {
+  const [open, setOpen] = useState(false);
+  const values = getValues();
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  const handleConfirm = () => {
+    if (
+      !values.voucherCode ||
+      !values.merchantId ||
+      !values.startDate ||
+      !values.endDate
+    ) {
+      showError("Marked Field is Required!");
+      return;
+    }
+    setOpen(false);
+    onConfirm();
+  };
+
+  return (
+    <>
+      <div className="flex justify-end items-center p-6">
+        <Button type="button" onClick={handleOpen}>
+          Preview Offers
+        </Button>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="min-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Offer Preview</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 text-sm pt-4">
+            {Object.entries(OFFER_FIELD_NAME).map(([key, label]) => {
+              const value = values[key];
+              const isEmpty =
+                value === "" ||
+                value === null ||
+                value === undefined ||
+                (Array.isArray(value) && value.length === 0);
+              return (
+                <div
+                  key={key}
+                  className={`p-2 rounded border text-center font-medium ${
+                    isEmpty
+                      ? "bg-red-100 text-red-700 border-red-300"
+                      : "bg-green-100 text-green-700 border-green-300"
+                  }`}
+                >
+                  {label}
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

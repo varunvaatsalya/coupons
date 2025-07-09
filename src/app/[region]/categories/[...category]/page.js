@@ -35,7 +35,6 @@ function Page() {
           </div>
         </div>
       </div>
-      <div className="">{category}</div>
       <Footer />
     </div>
   );

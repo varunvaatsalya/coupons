@@ -53,14 +53,67 @@ export async function GET(req) {
       });
     }
 
-    let merchant= null;
+    let merchant = null;
     try {
+      // merchant = await prisma.merchant.findUnique({
+      //   where: { id },
+      //   include: {
+      //     network: { select: { name: true } },
+      //     howToText: {
+      //       orderBy: { stepNumber: "asc" },
+      //       select: {
+      //         id: true,
+      //         stepNumber: true,
+      //         title: true,
+      //         description: true,
+      //         imageUrl: true,
+      //       },
+      //     },
+      //   },
+      // });
       merchant = await prisma.merchant.findUnique({
         where: { id },
-        include: {
-          network: { select: { name: true } },
+        select: {
+          id: true,
+          merchantName: true,
+          merchantSeoName: true,
+          description: true,
+          translatedDescription: true,
+          type: true,
+          logoUrl: true,
+          logoPublicId: true,
+          status: true,
+          visibility: true,
+          geographicMarket: true,
+          networkId: true,
+          currency: true,
+          staff: true,
+          merchantUrl: true,
+          affiliateUrl: true,
+          isPriority: true,
+          isPremium: true,
+          pageTitle: true,
+          metaDescription: true,
+          metaKeywords: true,
+          pageHeading: true,
+          howToOverviewImageUrl: true,
+          overviewImageUrl: true,
+          networkMerchantId: true,
+          isCPTAvailable: true,
+          androidAppUrl: true,
+          iosAppUrl: true,
+          windowsAppUrl: true,
+
+          // relations with selected fields
+          // network: {
+          //   select: {
+          //     name: true,
+          //   },
+          // },
           howToText: {
-            orderBy: { stepNumber: "asc" },
+            orderBy: {
+              stepNumber: "asc",
+            },
             select: {
               id: true,
               stepNumber: true,
@@ -104,6 +157,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  let formSubmitted = req.nextUrl.searchParams.get("formSubmitted");
   const token = req.cookies.get("authToken");
 
   if (!token) {
@@ -115,6 +169,7 @@ export async function POST(req) {
 
   const decoded = await verifyTokenWithLogout(token.value);
   const userRole = decoded?.role;
+  const userId = decoded?.id;
   if (!decoded || !userRole) {
     let res = NextResponse.json(
       { message: "Invalid token.", success: false },
@@ -126,18 +181,51 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    const { id, howToText = [], ...payload } = body;
+    const { id, howToText = [], networkId, ...payload } = body;
 
     let merchant;
+
+    const isAdmin = userRole === "admin";
+    // console.log(userRole, decoded,networkId, payload);
+    const extraFields =
+      formSubmitted === "1"
+        ? {
+            formState: "submitted",
+            dateCreated: new Date(),
+            ...(!isAdmin &&
+              userId && {
+                createdBy: {
+                  connect: { id: userId },
+                },
+              }),
+            createdByRole: userRole,
+          }
+        : {};
+
+    const relationData = networkId
+      ? {
+          network: {
+            connect: { id: networkId },
+          },
+        }
+      : {};
 
     if (id) {
       merchant = await prisma.merchant.update({
         where: { id },
-        data: payload,
+        data: {
+          ...payload,
+          ...extraFields,
+          ...relationData,
+        },
       });
     } else {
       merchant = await prisma.merchant.create({
-        data: payload,
+        data: {
+          ...payload,
+          ...extraFields,
+          ...relationData,
+        },
       });
     }
 
@@ -161,7 +249,7 @@ export async function POST(req) {
     }
 
     let updatedHowToText = null;
-    console.log("pre How to text", howToText);
+    // console.log("pre How to text", howToText);
     if (Array.isArray(howToText) && "howToText" in body) {
       let merchantId = merchant.id;
 
@@ -225,8 +313,16 @@ export async function POST(req) {
         orderBy: { stepNumber: "asc" },
       });
     }
-
-    console.log(updatedHowToText);
+    if (formSubmitted === "1") {
+      return NextResponse.json(
+        {
+          id: merchant.id,
+          message: "Merchent Saved Successfully!",
+          success: true,
+        },
+        { status: 200 }
+      );
+    }
 
     return NextResponse.json(
       { id: merchant.id, updatedHowToText, success: true },

@@ -117,8 +117,6 @@ function Page() {
         androidAppUrl: "",
         iosAppUrl: "",
         windowsAppUrl: "",
-        formState: "draft",
-        createdBy: "user-id",
       },
     });
 
@@ -144,28 +142,14 @@ function Page() {
         }
       }
 
-      // // Compare howToSteps
-      // const prevSteps = prevValues.howToSteps || [];
-      // const currentSteps = data.howToSteps || [];
-      // if (JSON.stringify(currentSteps) !== JSON.stringify(prevSteps)) {
-      //   payload.howToSteps = currentSteps.map(({ imageFile, ...rest }) => rest);
-      //   currentSteps.forEach((step, index) => {
-      //     if (step.imageFile instanceof File) {
-      //       formData.append(`howToSteps[${index}].imageFile`, step.imageFile);
-      //     }
-      //   });
-      // }
-
       if (Object.keys(payload).length === 0) {
         return;
       }
-      console.log("save apii called", payload);
+      // console.log("save apii called", payload);
 
       if (merchantId !== "new") {
         payload.id = merchantId;
       }
-
-      console.log(payload);
 
       setCreating(true);
       try {
@@ -251,20 +235,38 @@ function Page() {
     name: "metaKeywords",
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log(data);
-  };
+    setCreating(true);
+    try {
+      const res = await fetch("/api/merchants/newMerchant?formSubmitted=1", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
 
-  // const handleImageChange = () => {
-  //   const input = document.createElement("input");
-  //   input.type = "file";
-  //   input.accept = "image/*";
-  //   input.click();
-  //   input.onchange = (e) => {
-  //     let newImage = e.target.files[0];
-  //     setValue("logoUrl", newImage);
-  //   };
-  // };
+      const result = await res.json();
+
+      if (result.success) {
+        router.replace(`/works/merchants/${result.id}/view`);
+      } else {
+        showError(result.message);
+        setApiCallEnabled(false);
+      }
+    } catch (err) {
+      console.error("Failed to save:", err);
+      setApiCallEnabled(false);
+      showError("Failed to save merchant.");
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+      retryTimeoutRef.current = setTimeout(() => {
+        setApiCallEnabled(true);
+        retryTimeoutRef.current = null;
+      }, 30000);
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const handleRemoveImage = async () => {
     const publicId = getValues("logoPublicId");
@@ -436,11 +438,6 @@ function Page() {
         {logoUrl && logoPublicId ? (
           <div className="flex items-center gap-2">
             <div className="aspect-square h-32">
-              {/* <img
-                src={logoUrl}
-                alt={"logoUrl"}
-                className="rounded-full aspect-square object-cover"
-              /> */}
               <CldImage
                 width="960"
                 height="600"
@@ -463,13 +460,6 @@ function Page() {
                   <ImCross className="size-3" />
                 )}
               </div>
-              {/* <div
-                onClick={() => handleImageChange()}
-                className="h-6 w-6 rounded-full flex justify-center items-center right-5 bg-blue-400 hover:bg-blue-600
-             cursor-pointer text-white"
-              >
-                <MdEdit className="font-bold text-sm" />
-              </div> */}
               <div
                 onClick={() => setShowImageDialog(true)}
                 className="h-6 w-6 rounded-full flex justify-center items-center bg-gray-700 hover:bg-gray-800 cursor-pointer text-white"
@@ -525,12 +515,6 @@ function Page() {
               );
             }}
           </CldUploadWidget>
-          // <div
-          //   onClick={handleImageChange}
-          //   className="h-32 w-32 rounded-full border border-input bg-input dark:bg-input/30 dark:hover:bg-input/50 flex justify-center items-center text-input cursor-pointer"
-          // >
-          //   <FaPlus className="text-2xl" />
-          // </div>
         )}
       </div>
       <div className="grid grid-cols-12 gap-4 items-center">
@@ -618,7 +602,6 @@ function Page() {
           onValueChange={(val) => {
             setValue("networkId", val);
           }}
-          // {...register("networkId")}
         >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select Network" />
@@ -633,7 +616,6 @@ function Page() {
         </Select>
       </div>
 
-      {/* 11. Currency */}
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
           <div>11.</div>
@@ -644,7 +626,6 @@ function Page() {
           onValueChange={(val) => {
             setValue("currency", val);
           }}
-          // {...register("currency")}
         >
           <SelectTrigger className="w-1/2 col-span-9">
             <SelectValue placeholder="Select currency" />
@@ -658,23 +639,6 @@ function Page() {
                     : "")}
               </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* 12. Staff */}
-      <div className="grid grid-cols-12 gap-4 items-center">
-        <label className="col-span-3 flex items-center gap-3">
-          <div>12.</div>
-          <div>Staff</div>
-        </label>
-        <Select {...register("staff")}>
-          <SelectTrigger className="w-1/2 col-span-9">
-            <SelectValue placeholder="Select staff" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="staff-1">Staff 1</SelectItem>
-            <SelectItem value="staff-2">Staff 2</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -722,7 +686,13 @@ function Page() {
           <div>16.</div>
           <div>Is Premium</div>
         </label>
-        <Checkbox className="size-6" {...register("isPremium")} />
+        <Checkbox
+          className="size-6"
+          checked={watch("isPremium")}
+          onCheckedChange={() => {
+            setValue("isPremium", !watch("isPremium"));
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-12 gap-4 items-center">
@@ -796,7 +766,7 @@ function Page() {
 
       <div className="grid grid-cols-12 gap-4 items-center">
         <label className="col-span-3 flex items-center gap-3">
-          <div>22.</div>
+          <div>21.</div>
           <div>How To Text</div>
         </label>
         <HowToText
@@ -822,7 +792,13 @@ function Page() {
           <div>25.</div>
           <div>Is CPT Available</div>
         </label>
-        <Checkbox className="size-6" {...register("isCPTAvailable")} />
+        <Checkbox
+          className="size-6"
+          checked={watch("isCPTAvailable")}
+          onCheckedChange={() => {
+            setValue("isCPTAvailable", !watch("isCPTAvailable"));
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-12 gap-4 items-center">
@@ -861,11 +837,7 @@ function Page() {
         />
       </div>
 
-      <ConfirmDialog
-        onConfirm={handleSubmit(onSubmit)}
-        fieldLabels={MERCHANT_FIELD_LABELS}
-        getValues={getValues}
-      />
+      <ConfirmDialog onConfirm={handleSubmit(onSubmit)} getValues={getValues} />
     </form>
   );
 }
@@ -978,13 +950,17 @@ function HowToText({ value = [], onSave }) {
   );
 }
 
-function ConfirmDialog({ fieldLabels, onConfirm, getValues }) {
+function ConfirmDialog({ onConfirm, getValues }) {
   const [open, setOpen] = useState(false);
   const values = getValues();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
   const handleConfirm = () => {
+    if (!values.merchantName) {
+      showError("Merchant Name is Required!");
+      return;
+    }
     setOpen(false);
     onConfirm();
   };

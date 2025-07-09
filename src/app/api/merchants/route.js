@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { verifyTokenWithLogout } from "@/utils/jwt";
 
 export async function GET(req) {
+  let id = req.nextUrl.searchParams.get("id");
   const { searchParams } = new URL(req.url);
   const token = req.cookies.get("authToken");
 
@@ -25,6 +26,39 @@ export async function GET(req) {
   }
 
   try {
+    if (id) {
+      let merchant = null;
+      let message = "";
+      try {
+        merchant = await prisma.merchant.findUnique({
+          where: { id },
+          include: {
+            network: { select: { name: true } },
+            howToText: {
+              orderBy: { stepNumber: "asc" },
+              select: {
+                id: true,
+                stepNumber: true,
+                title: true,
+                description: true,
+                imageUrl: true,
+              },
+            },
+          },
+        });
+      } catch (error) {
+        console.log("merchant docs not found using id:", id);
+        message += "Merchant Not found!";
+      }
+      return NextResponse.json(
+        {
+          merchant,
+          message,
+          success: merchant ? true : false,
+        },
+        { status: merchant ? 200 : 404 }
+      );
+    }
     const page = parseInt(searchParams.get("page")) || 1;
     const take = 25;
     const skip = (page - 1) * take;

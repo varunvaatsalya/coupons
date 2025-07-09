@@ -37,6 +37,8 @@ export async function GET(req) {
         select: {
           id: true,
           merchantName: true,
+          status: true,
+          visibility: true,
         },
         orderBy: {
           merchantName: "asc",
@@ -62,17 +64,49 @@ export async function GET(req) {
     try {
       offer = await prisma.offer.findUnique({
         where: { id },
-        include: {
+        select: {
+          id: true,
+          offerReference: true,
+          merchantId: true,
+          offerType: true,
+          voucherCode: true,
           currentCategories: {
             select: { id: true },
           },
           addedCategories: {
             select: { id: true },
           },
+          statusManual: true,
+          merchantOfferUrl: true,
+          offerClickUrl: true,
+          offerHeadline: true,
+          offerTitle: true,
+          idealFeedsTitle: true,
+          discountType: true,
+          discountValue: true,
+          description: true,
+          idealFeedsDesc: true,
+          termsConditions: true,
+          minCartValue: true,
+          brandRestrictions: true,
+          userRestrictions: true,
+          startDate: true,
+          endDate: true,
+          displayOrder: true,
+          isExclusive: true,
+          isFeatured: true,
+          isHotDeal: true,
+          isNewsletter: true,
+          country: true,
+          currency: true,
+          cashbackId: true,
+          commission: true,
+          sharedCommission: true,
         },
       });
     } catch (error) {
       console.log("offer docs not found using id:", id);
+      console.log(error)
     }
 
     if (!offer) {
@@ -104,6 +138,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  let formSubmitted = req.nextUrl.searchParams.get("formSubmitted");
   const token = req.cookies.get("authToken");
 
   if (!token) {
@@ -115,6 +150,7 @@ export async function POST(req) {
 
   const decoded = await verifyTokenWithLogout(token.value);
   const userRole = decoded?.role;
+  const userId = decoded?.id;
   if (!decoded || !userRole) {
     let res = NextResponse.json(
       { message: "Invalid token.", success: false },
@@ -126,7 +162,8 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    const { id, currentCategories, addedCategories, ...payload } = body;
+    const { id, currentCategories, addedCategories, statusManual, ...payload } =
+      body;
 
     let data = { ...payload };
 
@@ -141,10 +178,23 @@ export async function POST(req) {
       };
     }
 
-    console.log(JSON.stringify(data));
+    // console.log(JSON.stringify(data));
+
+    const isAdmin = userRole === "admin";
+
+    if (formSubmitted === "1") {
+      data.statusManual = statusManual;
+      data.createdAt = new Date();
+      data.createdByRole = userRole;
+
+      if (!isAdmin && userId) {
+        data.createdBy = {
+          connect: { id: userId },
+        };
+      }
+    }
 
     let offer;
-
     if (id) {
       offer = await prisma.offer.update({
         where: { id },
@@ -155,7 +205,6 @@ export async function POST(req) {
         data,
       });
     }
-
     if (data.imageUrl && data.imagePublicId) {
       try {
         await prisma.imageAsset.upsert({
@@ -175,9 +224,19 @@ export async function POST(req) {
       }
     }
 
+    if (formSubmitted === "1") {
+      return NextResponse.json(
+        {
+          id: offer.id,
+          message: "Offer Saved Successfully!",
+          success: true,
+        },
+        { status: 200 }
+      );
+    }
     return NextResponse.json({ id: offer.id, success: true }, { status: 200 });
   } catch (error) {
-    console.error("Merchant fetch error:", error);
+    console.error("offer fetch error:", error);
     return NextResponse.json(
       { success: false, message: "Server error" },
       { status: 500 }
