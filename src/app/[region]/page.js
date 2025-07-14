@@ -3,7 +3,7 @@ import { BsStars } from "react-icons/bs";
 import React from "react";
 import { CarouselImages } from "../../components/public/ImageCarousel";
 import handIcon from "./assets/icon-hand-heart.svg";
-import Image from "next/image";
+// import Image from "next/image";
 import Link from "next/link";
 import img1 from "./assets/img1.jpg";
 import img2 from "./assets/img2.jpg";
@@ -11,6 +11,8 @@ import Header from "@/components/public/Header";
 import Navbar from "@/components/public/Navbar";
 import Footer from "@/components/public/Footer";
 import { usePathname } from "next/navigation";
+import Image from "@/components/public/ImageWithFallBack";
+// import { Image } from "@/components/public/Image";
 
 function Page() {
   const pathname = usePathname();
@@ -89,7 +91,8 @@ function Page() {
           </div>
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-x-2 gap-y-4">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Link href="/"
+              <Link
+                href="/"
                 key={index}
                 className="bg-white shadow-lg rounded-lg overflow-hidden"
                 role="link"
@@ -97,6 +100,7 @@ function Page() {
                 <div className="aspect-video relative bg-gray-300">
                   <Image
                     src={index % 2 ? img1 : img2}
+                    // src={"https://res.cloudinary.com/dfeea0k2a/image/upload/v1752329641/logos/tifwmr23tbrojm8paqcx.jpg"}
                     alt="Image"
                     height={800}
                     width={800}
@@ -133,7 +137,6 @@ function Page() {
             ))}
           </div>
         </div>
-
         <div className="mb-12">
           <div className="mb-2 md:mb-6 flex items-center relative">
             <h3 className="w-full md:text-center md:text-3xl font-bold">

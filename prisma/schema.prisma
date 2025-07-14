@@ -32,7 +32,7 @@ model User {
   updatedAt         DateTime  @default(now()) @updatedAt
 
   merchantsCreated Merchant[] @relation("CreatedMerchants")
-  offersCreated Offer[] @relation("CreatedOffers")
+  offersCreated    Offer[]    @relation("CreatedOffers")
 }
 
 enum Role {
@@ -118,6 +118,8 @@ model Merchant {
   createdByRole String?
   createdById   String?  @db.Uuid
   createdBy     User?    @relation("CreatedMerchants", fields: [createdById], references: [id])
+
+  homeSectionItems HomeSectionItem[] @relation("MerchantHomeSectionItems")
 }
 
 // ------------------- Network Model -------------------
@@ -203,6 +205,7 @@ model Category {
   path            String     @default("") // "home/fashion/mens"
   level           Int        @default(0)
 
+  navbarOrder   Int?
   offersCurrent Offer[]  @relation("CurrentCategories")
   offersAdded   Offer[]  @relation("AddedCategories")
   createdAt     DateTime @default(now())
@@ -222,7 +225,7 @@ model Offer {
   voucherCode       String?
   currentCategories Category[] @relation("CurrentCategories")
   addedCategories   Category[] @relation("AddedCategories")
-  statusManual      String?     @default("draft")
+  statusManual      String?    @default("draft")
   merchantOfferUrl  String?
   offerClickUrl     String?
 
@@ -253,12 +256,13 @@ model Offer {
   commission       Float?
   sharedCommission Float?
 
-  ownerAgency String?
-  createdAt   DateTime @default(now())
+  ownerAgency   String?
+  createdAt     DateTime @default(now())
   createdByRole String?
   createdById   String?  @db.Uuid
   createdBy     User?    @relation("CreatedOffers", fields: [createdById], references: [id])
 
+  homeSectionItems HomeSectionItem[] @relation("OfferHomeSectionItems")
 }
 
 model offerType {
@@ -266,4 +270,62 @@ model offerType {
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CarouselImage {
+  id       String @id @default(uuid()) @db.Uuid
+  name     String // Admin defined title for banner
+  position Float?
+
+  largeUrl  String // Desktop
+  mediumUrl String // Tablet
+  smallUrl  String // Mobile
+
+  largeId  String // Cloudinary public_id for delete
+  mediumId String
+  smallId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HomeSection {
+  id           String          @id @default(uuid())
+  type         HomeSectionType
+  label        String
+  categorySlug String?
+  cardStyle    HomeCardStyle
+  position     Int
+
+  items HomeSectionItem[]
+}
+
+model HomeSectionItem {
+  id        String      @id @default(uuid())
+  sectionId String
+  section   HomeSection @relation(fields: [sectionId], references: [id])
+
+  offerId String?
+  offer   Offer?  @relation("OfferHomeSectionItems", fields: [offerId], references: [id])
+
+  merchantId String?
+  merchant   Merchant? @relation("MerchantHomeSectionItems", fields: [merchantId], references: [id])
+
+  label         String? // for button
+  link          String? // for button
+  backgroundUrl String?
+  publicId      String?
+  position      Int
+}
+
+enum HomeSectionType {
+  TOP_OFFERS // Large cards with background + logo
+  CATEGORY_OFFERS // Offers from a specific category
+  TOP_MERCHANTS // Highlighted merchants
+  LINK_BUTTONS // Buttons linking to categories or pages
+}
+
+enum HomeCardStyle {
+  SIMPLE_BG // small card with just image + title
+  BG_WITH_LOGO // large card with background + logo
 }

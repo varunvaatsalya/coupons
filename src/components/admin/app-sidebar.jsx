@@ -3,6 +3,7 @@ import {
   ChevronRight,
   FileChartColumn,
   Globe,
+  Images,
   LayoutPanelLeft,
   LetterText,
   ListTreeIcon,
@@ -10,6 +11,8 @@ import {
   Network,
   Settings,
   UserRoundCog,
+  BookImage,
+  LayoutList,
 } from "lucide-react";
 import { LuLayoutDashboard } from "react-icons/lu";
 import {
@@ -73,8 +76,8 @@ const sidebarSections = [
     icon: MonitorCog,
     roles: ["admin"],
     items: [
-      { label: "Calendar", icon: LuLayoutDashboard, href: "/works/roles" },
-      { label: "General Settings", icon: LuLayoutDashboard, href: "/works/setings" },
+      { label: "Banners", icon: Images, href: "/works/site-management/banner" },
+      { label: "Home Layout", icon: LayoutList, href: "/works/site-management/homeLayout" },
     ],
   },
   {
@@ -83,7 +86,11 @@ const sidebarSections = [
     roles: ["admin"],
     items: [
       { label: "Calendar", icon: LuLayoutDashboard, href: "/works/roles" },
-      { label: "General Settings", icon: LuLayoutDashboard, href: "/works/setings" },
+      {
+        label: "General Settings",
+        icon: LuLayoutDashboard,
+        href: "/works/setings",
+      },
     ],
   },
   {
@@ -92,8 +99,18 @@ const sidebarSections = [
     roles: ["admin"],
     items: [
       { label: "Calendar", icon: LuLayoutDashboard, href: "/works/roles" },
-      { label: "General Settings", icon: LuLayoutDashboard, href: "/works/setings" },
+      {
+        label: "General Settings",
+        icon: LuLayoutDashboard,
+        href: "/works/setings",
+      },
     ],
+  },
+  {
+    title: "Gallery",
+    icon: BookImage,
+    roles: ["admin", "owner"],
+    href: "/works/gallery",
   },
   {
     title: "Role Management",

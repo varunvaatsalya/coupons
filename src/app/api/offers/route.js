@@ -4,6 +4,7 @@ import { verifyTokenWithLogout } from "@/utils/jwt";
 
 export async function GET(req) {
   let id = req.nextUrl.searchParams.get("id");
+  let categoryId = req.nextUrl.searchParams.get("categoryId");
   const { searchParams } = new URL(req.url);
   const token = req.cookies.get("authToken");
 
@@ -52,6 +53,46 @@ export async function GET(req) {
         },
         { status: offer ? 200 : 404 }
       );
+    }
+    if (categoryId) {
+      try {
+        const offers = await prisma.offer.findMany({
+          where: {
+            statusManual: "auto",
+            startDate: { lte: new Date() },
+            endDate: { gte: new Date() },
+            currentCategories: {
+              some: {
+                id: categoryId,
+              },
+            },
+          },
+          select: {
+            id: true,
+            offerTitle: true,
+            merchantId: true,
+            merchant: {
+              select: { merchantName: true },
+            },
+          },
+        });
+
+        const formatted = offers.map((o) => ({
+          id: o.id,
+          title: o.offerTitle,
+          merchantId: o.merchantId,
+          merchantName: o.merchant?.merchantName || "Unknown",
+        }));
+        console.log(offers)
+
+        return NextResponse.json({ success: true, offers: formatted });
+      } catch (error) {
+        console.log(error);
+        return NextResponse.json(
+          { success: false, message: "Internal Server Error!" },
+          { status: 500 }
+        );
+      }
     }
     const page = parseInt(searchParams.get("page")) || 1;
     const take = 25;

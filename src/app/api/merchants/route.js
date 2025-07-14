@@ -4,6 +4,7 @@ import { verifyTokenWithLogout } from "@/utils/jwt";
 
 export async function GET(req) {
   let id = req.nextUrl.searchParams.get("id");
+  let infoOnly = req.nextUrl.searchParams.get("infoOnly");
   const { searchParams } = new URL(req.url);
   const token = req.cookies.get("authToken");
 
@@ -59,6 +60,21 @@ export async function GET(req) {
         { status: merchant ? 200 : 404 }
       );
     }
+    if (infoOnly === "1") {
+      let merchants = await prisma.merchant.findMany({
+        select: {
+          id: true,
+          merchantName: true,
+        },
+      });
+      return NextResponse.json(
+        {
+          merchants,
+          success: true,
+        },
+        { status: 200 }
+      );
+    }
     const page = parseInt(searchParams.get("page")) || 1;
     const take = 25;
     const skip = (page - 1) * take;
@@ -88,7 +104,7 @@ export async function GET(req) {
         status: true,
         visibility: true,
         merchantUrl: true,
-        offers: { select: { id: true, status: true } },
+        offers: { select: { id: true, statusManual: true } },
       },
       orderBy: { dateCreated: "desc" },
       take,

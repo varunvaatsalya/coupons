@@ -17,7 +17,7 @@ import Loading from "@/components/parts/Loading";
 import { useParams } from "next/navigation";
 import { StatusBadge, VisibilityBadge } from "@/components/parts/Badges";
 import { CldImage } from "next-cloudinary";
-import { FaPlus } from "react-icons/fa";
+import { FaExpandArrowsAlt, FaPlus } from "react-icons/fa";
 import {
   Dialog,
   DialogContent,
