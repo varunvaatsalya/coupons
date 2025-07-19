@@ -40,7 +40,7 @@ function Page() {
   const onSubmit = async (data) => {
     setSubmitting(true);
     try {
-      let result = await fetch("/api/auth", {
+      let result = await fetch("/api/auth/adminUser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

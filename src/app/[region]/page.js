@@ -159,7 +159,7 @@ function Page() {
               "Accesseries",
             ].map((cat, it) => (
               <div key={it} className="bg-teal-200 p-4 text-center rounded-lg">
-                <span className="border-b-2 border-transparent hover:border-black font-bold">
+                <span className="text-nowrap border-b-2 border-transparent hover:border-black font-bold">
                   {cat}
                 </span>
               </div>
@@ -209,6 +209,55 @@ function Page() {
                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+        <div className="mb-12">
+          <div className="mb-2 md:mb-6 flex items-center relative">
+            <h3 className="w-full md:text-center md:text-3xl font-bold">
+              Today's Top Merchants
+            </h3>
+            <Link
+              href={`${pathname}/adidas`}
+              className="absolute right-0 text-xs md:text-base font-bold hover:underline"
+            >
+              View All Top Restaurents
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <article
+                key={index}
+                className="flex flex-col items-center"
+                itemScope
+                itemType="https://schema.org/Organization"
+              >
+                {/* Logo - Floating Circular Card */}
+                <div className="relative z-10 -mb-2">
+                  <div
+                    className="w-28 h-28 rounded-full bg-white shadow-md border p-2"
+                  >
+                    <Image
+                      src={img2}
+                      alt={`${"adidas"} logo`}
+                      width={400}
+                      height={400}
+                      className="object-cover w-full h-full rounded-full"
+                      itemProp="logo"
+                    />
+                  </div>
+                </div>
+
+                {/* Name - Rectangular Card */}
+                <div className="w-28 p-1.5 pt-2.5 bg-white rounded-lg shadow-md text-center border z-0">
+                  <h3
+                    className="text-xs font-bold text-gray-800 uppercase tracking-wide line-clamp-1"
+                    itemProp="name"
+                  >
+                    {"adidas"}
+                  </h3>
+                </div>
+              </article>
             ))}
           </div>
         </div>

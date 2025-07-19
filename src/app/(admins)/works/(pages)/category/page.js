@@ -223,18 +223,28 @@ import { ChevronRight, ChevronDown, Pencil, Plus, Info, X } from "lucide-react";
 import { TbBinaryTreeFilled } from "react-icons/tb";
 import { VscListTree } from "react-icons/vsc";
 import { Badge } from "@/components/ui/badge";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
+import {
+  getDynamicIconComponent,
+  isValidIconFormat,
+} from "@/utils/getDynamicIcon";
+import Link from "next/link";
 
 function CategoryFormDialog({ open, setOpen, onSubmit, defaultValues = {} }) {
+  const defaultForm = {
+    name: "",
+    translatedName: "",
+    description: "",
+    icon: "",
+    country: "",
+    pageTitle: "",
+    metaDescription: "",
+    metaKeywords: [],
+    newKeyword: "",
+  };
   const [form, setForm] = useState({
-    name: defaultValues.name || "",
-    translatedName: defaultValues.translatedName || "",
-    description: defaultValues.description || "",
-    country: defaultValues.country || "",
-    pageTitle: defaultValues.pageTitle || "",
-    metaDescription: defaultValues.metaDescription || "",
-    metaKeywords: defaultValues.metaKeywords || [],
-    newKeyword: "", // temporary input
+    ...defaultForm,
+    ...defaultValues,
   });
 
   const handleChange = (e) => {
@@ -242,14 +252,22 @@ function CategoryFormDialog({ open, setOpen, onSubmit, defaultValues = {} }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (form.icon && !isValidIconFormat(form.icon)) {
+      showError("Invalid icon format. Example: fa/FaAngleUp");
+      return;
+    }
     const payload = {
       ...form,
       metaKeywords: form.metaKeywords.map((k) => k.trim()),
     };
     delete payload.newKeyword;
-    onSubmit(payload);
-    setOpen(false);
+    let result = await onSubmit(payload);
+    if (result?.success) {
+      setForm(defaultForm);
+      setOpen(false);
+      showSuccess("Category Saved Successfully!");
+    } else showError(result.message || "Form Submition Error!");
   };
 
   return (
@@ -324,6 +342,32 @@ function CategoryFormDialog({ open, setOpen, onSubmit, defaultValues = {} }) {
               value={form.metaDescription}
               onChange={handleChange}
             />
+          </div>
+
+          <div className="col-span-2">
+            <Label className={"p-2"}>
+              Icon (Icon format){" "}
+              <Link
+                href={`https://react-icons.github.io/react-icons/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 text-sm underline hover:text-blue-800"
+              >
+                Browse Icons
+              </Link>
+            </Label>
+            <Input
+              name="icon"
+              value={form.icon}
+              onChange={handleChange}
+              placeholder="e.g. fa/FaAngleUp"
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">Preview:</span>
+            <div className="px-4 py-3 border bg-muted rounded-lg">
+              {getDynamicIconComponent(form.icon, 40)}
+            </div>
           </div>
 
           <div className="col-span-2">
@@ -414,6 +458,7 @@ function CategoryNode({ node, onUpdate }) {
     const data = await res.json();
     setChildren((prev) => [...prev, data.category]);
     setExpanded(true);
+    return data;
   };
 
   const handleEdit = async (updatedCat) => {
@@ -428,6 +473,7 @@ function CategoryNode({ node, onUpdate }) {
     });
     const data = await res.json();
     onUpdate(data.category);
+    return data;
   };
 
   return (
@@ -448,15 +494,29 @@ function CategoryNode({ node, onUpdate }) {
           )}
           <div>
             <div className="font-medium flex items-center gap-1">
-              <VscListTree /> {node.name}
+              {node.icon ? (
+                getDynamicIconComponent(node.icon, 16)
+              ) : (
+                <VscListTree />
+              )}{" "}
+              {node.name}
             </div>
             <div className="text-xs text-muted-foreground">{node.path}</div>
           </div>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
+          {node.level === 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setOpenAdd(true)}
+            >
+              <Plus size={14} />
+            </Button>
+          )}
           <Dialog open={openDetails} onOpenChange={setOpenDetails}>
             <DialogTrigger asChild>
-              <Button size="icon" variant="ghost">
+              <Button size="sm" variant="outline">
                 <Info size={14} />
               </Button>
             </DialogTrigger>
@@ -502,6 +562,13 @@ function CategoryNode({ node, onUpdate }) {
                   <div className="text-muted-foreground">Path</div>
                   <div className="font-medium">{node.path}</div>
                 </div>
+                <div>
+                  <div className="text-muted-foreground">Icon</div>
+                  <div className="font-medium">{node.icon}</div>
+                  <div className="m-1 w-20 p-2 border bg-muted rounded-lg">
+                    {getDynamicIconComponent(node.icon)}
+                  </div>
+                </div>
               </div>
               <div className="mt-2">
                 <Button
@@ -515,12 +582,8 @@ function CategoryNode({ node, onUpdate }) {
               </div>
             </DialogContent>
           </Dialog>
-
-          <Button size="icon" variant="ghost" onClick={() => setOpenEdit(true)}>
+          <Button size="sm" variant="outline" onClick={() => setOpenEdit(true)}>
             <Pencil size={14} />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={() => setOpenAdd(true)}>
-            <Plus size={14} />
           </Button>
         </div>
       </div>
@@ -578,9 +641,12 @@ export default function Page() {
       }),
     });
     const data = await res.json();
+
     if (data.success) {
       setTree((trees) => [data.category, ...trees]);
     } else showError(data.message ?? "Error in saving category");
+
+    return data;
   };
 
   return (

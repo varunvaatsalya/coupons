@@ -31,38 +31,9 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const body = await req.json();
-  const {
-    name,
-    translatedName,
-    description,
-    icon,
-    country,
-    pageTitle,
-    metaDescription,
-    metaKeywords,
-    parentId,
-  } = body;
-
-  const slug = name.toLowerCase().replace(/\s+/g, "-");
-  let path = slug;
-  let level = 0;
-
-  if (parentId) {
-    const parent = await prisma.category.findUnique({
-      where: { id: parentId },
-    });
-    if (!parent)
-      return NextResponse.json(
-        { error: "Invalid parentId", success: false },
-        { status: 400 }
-      );
-    path = `${parent.path}/${slug}`;
-    level = parent.level + 1;
-  }
-
-  const category = await prisma.category.create({
-    data: {
+  try {
+    const body = await req.json();
+    const {
       name,
       translatedName,
       description,
@@ -72,49 +43,56 @@ export async function POST(req) {
       metaDescription,
       metaKeywords,
       parentId,
-      path,
-      level,
-    },
-  });
+    } = body;
 
-  return NextResponse.json({ category, success: true });
+    const slug = name.toLowerCase().replace(/\s+/g, "-");
+    let path = slug;
+    let level = 0;
+
+    if (parentId) {
+      const parent = await prisma.category.findUnique({
+        where: { id: parentId },
+      });
+      if (!parent)
+        return NextResponse.json(
+          { error: "Invalid parentId", success: false },
+          { status: 400 }
+        );
+      path = `${parent.path}/${slug}`;
+      level = parent.level + 1;
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        name,
+        translatedName,
+        description,
+        icon,
+        country,
+        pageTitle,
+        metaDescription,
+        metaKeywords,
+        parentId,
+        path,
+        level,
+      },
+    });
+
+    return NextResponse.json({ category, success: true });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PUT(req) {
-  const body = await req.json();
-  const {
-    id,
-    name,
-    translatedName,
-    description,
-    icon,
-    country,
-    pageTitle,
-    metaDescription,
-    metaKeywords,
-    parentId,
-  } = body;
-
-  const slug = name.toLowerCase().replace(/\s+/g, "-");
-  let path = slug;
-  let level = 0;
-
-  if (parentId) {
-    const parent = await prisma.category.findUnique({
-      where: { id: parentId },
-    });
-    if (!parent)
-      return NextResponse.json(
-        { error: "Invalid parentId", success: false },
-        { status: 400 }
-      );
-    path = `${parent.path}/${slug}`;
-    level = parent.level + 1;
-  }
-
-  const category = await prisma.category.update({
-    where: { id },
-    data: {
+  try {
+    const body = await req.json();
+    const {
+      id,
       name,
       translatedName,
       description,
@@ -124,10 +102,48 @@ export async function PUT(req) {
       metaDescription,
       metaKeywords,
       parentId,
-      path,
-      level,
-    },
-  });
+    } = body;
 
-  return NextResponse.json({ category, success: true });
+    const slug = name.toLowerCase().replace(/\s+/g, "-");
+    let path = slug;
+    let level = 0;
+
+    if (parentId) {
+      const parent = await prisma.category.findUnique({
+        where: { id: parentId },
+      });
+      if (!parent)
+        return NextResponse.json(
+          { error: "Invalid parentId", success: false },
+          { status: 400 }
+        );
+      path = `${parent.path}/${slug}`;
+      level = parent.level + 1;
+    }
+
+    const category = await prisma.category.update({
+      where: { id },
+      data: {
+        name,
+        translatedName,
+        description,
+        icon,
+        country,
+        pageTitle,
+        metaDescription,
+        metaKeywords,
+        parentId,
+        path,
+        level,
+      },
+    });
+
+    return NextResponse.json({ category, success: true });
+  } catch (error) {
+    console.log(error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { showError, showInfo } from "@/utils/toast";
+import { showError, showInfo, showSuccess } from "@/utils/toast";
 import { Input } from "@/components/ui/input";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
@@ -29,6 +29,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import TopOfferSection from "@/components/public/layout/TopOfferSection";
+import CatgOfferSection from "@/components/public/layout/CatgOfferSection";
+import LinkButtonsSection from "@/components/public/layout/LinkButtonsSection";
+import TopMerchant from "@/components/public/layout/TopMerchant";
+import { differenceWith, isEqual } from "lodash";
 
 const sectionTypes = [
   { label: "Top Offers", value: "TOP_OFFERS" },
@@ -38,12 +43,12 @@ const sectionTypes = [
 ];
 
 export default function Page() {
-  const [mode, setMode] = useState("edit");
   const [sections, setSections] = useState([]);
+  const [initialSections, setInitialSections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { control, register, setValue, watch } = useForm({
+  const { handleSubmit, control, register, setValue, watch, reset } = useForm({
     defaultValues: { sections: [] },
   });
 
@@ -62,6 +67,24 @@ export default function Page() {
         setCategories(data.tree); // category should have `id`, `name`, `children`
       }
     }
+    async function loadData() {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/siteManagement/section");
+        const data = await res.json();
+        if (data.success) {
+          setInitialSections(data.sections);
+          reset({ sections: data.sections });
+        } else {
+          showError(data.message || "Failed to fetch layout");
+        }
+      } catch (err) {
+        showError("Client side fetch error");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
     fetchCats();
   }, []);
 
@@ -86,44 +109,93 @@ export default function Page() {
 
   const addSection = () => {
     append({
-      // id: uuid(),
       label: "",
       type: "TOP_OFFERS",
       cardStyle: "SIMPLE_BG",
-      categorySlug: "",
+      categoryId: "",
       items: [],
     });
   };
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/siteManagement/sections");
-        const data = await res.json();
-        if (data.success) {
-          setSections(data.sections); // set the fetched data
-        } else {
-          showError(data.message || "Failed to fetch layout");
+  function diffHomeLayout(oldSections, newSections) {
+    const addedSections = differenceWith(newSections, oldSections, isEqual);
+    const removedSections = differenceWith(oldSections, newSections, isEqual);
+    const updatedSections = [];
+
+    for (const newSec of newSections) {
+      const oldSec = oldSections.find((s) => s.id === newSec.id);
+      if (oldSec) {
+        if (
+          newSec.label !== oldSec.label ||
+          newSec.type !== oldSec.type ||
+          newSec.cardStyle !== oldSec.cardStyle ||
+          newSec.categoryId !== oldSec.categoryId
+        ) {
+          updatedSections.push({ ...newSec, type: "section" });
         }
-      } catch (err) {
-        showError("Client side fetch error");
-      } finally {
-        setLoading(false);
+
+        // Now check inner items
+        const addedItems = differenceWith(newSec.items, oldSec.items, isEqual);
+        const removedItems = differenceWith(
+          oldSec.items,
+          newSec.items,
+          isEqual
+        );
+        const updatedItems = [];
+
+        for (const newItem of newSec.items) {
+          const oldItem = oldSec.items.find((i) => i.id === newItem.id);
+          if (oldItem && !isEqual(oldItem, newItem)) {
+            updatedItems.push({ ...newItem, sectionId: newSec.id });
+          }
+        }
+
+        if (addedItems.length || removedItems.length || updatedItems.length) {
+          updatedSections.push({
+            ...newSec,
+            itemChanges: {
+              addedItems,
+              removedItems,
+              updatedItems,
+            },
+          });
+        }
       }
     }
-    // loadData();
-  }, []);
 
-  async function handleSave() {
+    return {
+      addedSections,
+      removedSections,
+      updatedSections,
+    };
+  }
+
+  async function handleSave(data) {
+    console.log(data);
+    data.sections.forEach((section, sectionIndex) => {
+      section.position = sectionIndex;
+
+      section.items?.forEach((item, itemIndex) => {
+        item.position = itemIndex;
+      });
+    });
+    const diff = diffHomeLayout(initialSections, data.sections);
+    console.log(diff);
+    if (
+      diff.addedSections?.length === 0 &&
+      diff.removedSections?.length === 0 &&
+      diff.updatedSections?.length === 0
+    ) {
+      showError("No changes Detected!");
+    }
     try {
       setSaving(true);
-      const res = await fetch("/api/siteManagement/sections", {
+      const res = await fetch("/api/siteManagement/section", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ sections }),
+        body: JSON.stringify(diff),
       });
 
       const result = await res.json();
@@ -140,7 +212,7 @@ export default function Page() {
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <form onSubmit={handleSubmit(handleSave)} className="space-y-4 p-4">
       {/* Top Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Home Layout Management</h1>
@@ -150,18 +222,18 @@ export default function Page() {
             <DialogTrigger asChild>
               <Button variant="outline">Preview</Button>
             </DialogTrigger>
-            <DialogContent className="min-w-svw w-svw h-svh flex flex-col px-0 py-2">
+            <DialogContent className="min-w-svw w-svw h-svh flex flex-col px-0 py-2 bg-gray-100 text-black">
               <DialogHeader className="px-4">
                 <DialogTitle>Preview</DialogTitle>
                 <DialogDescription>Preview of Home Page UI</DialogDescription>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto">
-                <HomePreview sections={watch("sections")} />
-                <div className="w-12 h-[200vh] bg-red-600 "></div>
+                <HomePreview />
+                {/* <div className="w-12 h-[200vh] bg-red-600 "></div> */}
               </div>
             </DialogContent>
           </Dialog>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>
@@ -218,28 +290,33 @@ export default function Page() {
                         </SelectContent>
                       </Select>
 
-                      <Select
-                        value={watch(`sections.${index}.cardStyle`)}
-                        onValueChange={(val) =>
-                          setValue(`sections.${index}.cardStyle`, val)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Card Style" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={"SIMPLE_BG"}>Simple bg</SelectItem>
-                          <SelectItem value={"BG_WITH_LOGO"}>
-                            Bg With Logo
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {(type === "TOP_OFFERS" ||
+                        type === "CATEGORY_OFFERS") && (
+                        <Select
+                          value={watch(`sections.${index}.cardStyle`)}
+                          onValueChange={(val) =>
+                            setValue(`sections.${index}.cardStyle`, val)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Card Style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={"SIMPLE_BG"}>
+                              Simple bg
+                            </SelectItem>
+                            <SelectItem value={"BG_WITH_LOGO"}>
+                              Bg With Logo
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                       {/* Only show category selector if type is CATEGORY_OFFERS */}
                       {type === "CATEGORY_OFFERS" && (
                         <Select
-                          value={watch(`sections.${index}.categorySlug`)}
+                          value={watch(`sections.${index}.categoryId`)}
                           onValueChange={(val) => {
-                            setValue(`sections.${index}.categorySlug`, val);
+                            setValue(`sections.${index}.categoryId`, val);
                           }}
                         >
                           <SelectTrigger>
@@ -277,7 +354,7 @@ export default function Page() {
                       {/* Items Section */}
                       {type &&
                       (type === "CATEGORY_OFFERS"
-                        ? watch(`sections.${index}.categorySlug`)
+                        ? watch(`sections.${index}.categoryId`)
                         : true) ? (
                         <div className="w-full border-t pt-4 mt-4 space-y-2">
                           <h4 className="font-semibold">Items</h4>
@@ -288,7 +365,7 @@ export default function Page() {
                             control={control}
                             register={register}
                             setValue={setValue}
-                            categoryId={watch(`sections.${index}.categorySlug`)}
+                            categoryId={watch(`sections.${index}.categoryId`)}
                             watch={watch}
                           />
                         </div>
@@ -302,7 +379,7 @@ export default function Page() {
           </div>
         )}
       </div>
-    </div>
+    </form>
   );
 }
 
@@ -345,7 +422,7 @@ function FormFieldArray({
       if (!categoryId) showError("Choose Category First");
       getData();
     }
-  }, [type]);
+  }, [type, categoryId]);
 
   return (
     <div className="space-y-2 w-full">
@@ -684,5 +761,35 @@ function ImgData({ name, itemIndex, watch, setValue }) {
 }
 
 function HomePreview() {
-  return <div className="px-4 mx-auto max-w-6xl space-y-12"></div>;
+  const [sections, setSections] = useState([]);
+
+  const sectionComponent = {
+    TOP_OFFERS: TopOfferSection,
+    CATEGORY_OFFERS: CatgOfferSection,
+    TOP_MERCHANTS: TopMerchant,
+    LINK_BUTTONS: LinkButtonsSection,
+  };
+
+  useEffect(() => {
+    async function fetchSection() {
+      const res = await fetch("/api/siteManagement/section?preview=1");
+      const data = await res.json();
+      if (data.success) {
+        setSections(data.sections);
+        console.log(data.sections);
+        showSuccess("fetched");
+      }
+    }
+    fetchSection();
+  }, []);
+
+  return (
+    <div className="px-4 mx-auto max-w-6xl space-y-12 text-black">
+      {sections.map((section, it) => {
+        const SectionModel = sectionComponent[section.type];
+        if (!SectionModel) return null;
+        return <SectionModel key={it} section={section} />;
+      })}
+    </div>
+  );
 }

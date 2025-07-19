@@ -206,10 +206,11 @@ model Category {
   level           Int        @default(0)
 
   navbarOrder   Int?
-  offersCurrent Offer[]  @relation("CurrentCategories")
-  offersAdded   Offer[]  @relation("AddedCategories")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  offersCurrent Offer[]       @relation("CurrentCategories")
+  offersAdded   Offer[]       @relation("AddedCategories")
+  homeSections  HomeSection[] @relation("CategoryToHomeSection")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([path])
 }
@@ -290,39 +291,44 @@ model CarouselImage {
 }
 
 model HomeSection {
-  id           String          @id @default(uuid())
-  type         HomeSectionType
-  label        String
-  categorySlug String?
-  cardStyle    HomeCardStyle
-  position     Int
+  id         String          @id @default(uuid()) @db.Uuid
+  type       HomeSectionType
+  label      String
+  categoryId String?         @db.Uuid
+  category   Category?       @relation("CategoryToHomeSection", fields: [categoryId], references: [id])
+  cardStyle  HomeCardStyle
+  position   Int
 
-  items HomeSectionItem[]
+  items     HomeSectionItem[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 }
 
 model HomeSectionItem {
   id        String      @id @default(uuid())
-  sectionId String
+  sectionId String      @db.Uuid
   section   HomeSection @relation(fields: [sectionId], references: [id])
 
-  offerId String?
+  offerId String? @db.Uuid
   offer   Offer?  @relation("OfferHomeSectionItems", fields: [offerId], references: [id])
 
-  merchantId String?
+  merchantId String?   @db.Uuid
   merchant   Merchant? @relation("MerchantHomeSectionItems", fields: [merchantId], references: [id])
 
-  label         String? // for button
-  link          String? // for button
+  label         String?
+  link          String?
   backgroundUrl String?
   publicId      String?
   position      Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum HomeSectionType {
-  TOP_OFFERS // Large cards with background + logo
-  CATEGORY_OFFERS // Offers from a specific category
-  TOP_MERCHANTS // Highlighted merchants
-  LINK_BUTTONS // Buttons linking to categories or pages
+  TOP_OFFERS
+  CATEGORY_OFFERS
+  TOP_MERCHANTS
+  LINK_BUTTONS
 }
 
 enum HomeCardStyle {
