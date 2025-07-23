@@ -81,8 +81,6 @@ function Page() {
     geographicCountry: [],
   });
 
-  console.log(params.offerId);
-
   const retryTimeoutRef = useRef(null);
 
   const { register, handleSubmit, setValue, watch, getValues, reset } = useForm(
@@ -273,7 +271,6 @@ function Page() {
   };
 
   const onSubmit = async (data) => {
-    console.log(data);
     setCreating(true);
     try {
       const res = await fetch("/api/offers/newOffer?formSubmitted=1", {
@@ -320,8 +317,11 @@ function Page() {
       <div className="flex justify-between items-center gap-3 border-b py-2">
         <div className="flex items-center gap-2">
           <Button
+            type="button"
             variant="icon"
-            onClick={() => router.back()}
+            onClick={() => {
+              router.back();
+            }}
             className="hover:opacity-80"
           >
             <IoMdArrowRoundBack className="size-6" />

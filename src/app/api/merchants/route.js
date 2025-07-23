@@ -65,6 +65,9 @@ export async function GET(req) {
         select: {
           id: true,
           merchantName: true,
+          status: true,
+          visibility: true,
+
         },
       });
       return NextResponse.json(

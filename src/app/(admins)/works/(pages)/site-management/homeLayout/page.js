@@ -44,6 +44,8 @@ export default function Page() {
   const [initialSections, setInitialSections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [allMerchants, setAllMerchants] = useState([]);
+  const [categoriesOfferData, setCategoriesOfferData] = useState([]);
 
   const { handleSubmit, control, register, setValue, watch, reset } = useForm({
     defaultValues: { sections: [] },
@@ -206,6 +208,31 @@ export default function Page() {
     }
   }
 
+  async function fetchAllMerchant() {
+    try {
+      let res = await fetch("/api/merchants?infoOnly=1");
+      res = await res.json();
+      if (res.success) {
+        setAllMerchants(res.merchants);
+      } else showError(res.message || "Merchants details fetch error");
+    } catch (error) {
+      console.log(error);
+      showError("client side merchant fetch error");
+    }
+  }
+
+  useEffect(() => {
+    const hasTopMerchants = fields.some((_, index) => {
+      const type = watch(`sections.${index}.type`);
+      return type === "TOP_MERCHANTS";
+    });
+
+    if (hasTopMerchants && !allMerchants.length) {
+      console.log("Calling fetchAllMerchant once...");
+      fetchAllMerchant();
+    }
+  }, [fields, watch(), allMerchants.length]);
+
   return (
     <form onSubmit={handleSubmit(handleSave)} className="space-y-4 p-4">
       {/* Top Header */}
@@ -252,6 +279,20 @@ export default function Page() {
             <Accordion type="multiple" className="space-y-2">
               {fields.map((section, index) => {
                 const type = watch(`sections.${index}.type`);
+                const categoryId = watch(`sections.${index}.categoryId`);
+                if (
+                  type === "CATEGORY_OFFERS" &&
+                  categoryId &&
+                  !categoriesOfferData[categoryId]
+                ) {
+                  fetchOffersByCategoryId(categoryId).then((data) => {
+                    setCategoriesOfferData((prev) => ({
+                      ...prev,
+                      [categoryId]: data,
+                    }));
+                  });
+                }
+
                 return (
                   <AccordionItem key={section.id} value={section.id}>
                     <AccordionTrigger className="rounded-lg bg-muted px-3 flex items-center justify-between w-full">
@@ -312,7 +353,7 @@ export default function Page() {
                       {/* Only show category selector if type is CATEGORY_OFFERS */}
                       {type === "CATEGORY_OFFERS" && (
                         <Select
-                          value={watch(`sections.${index}.categoryId`)}
+                          value={categoryId || ""}
                           onValueChange={(val) => {
                             setValue(`sections.${index}.categoryId`, val);
                           }}
@@ -351,9 +392,7 @@ export default function Page() {
                       </div>
                       {/* Items Section */}
                       {type &&
-                      (type === "CATEGORY_OFFERS"
-                        ? watch(`sections.${index}.categoryId`)
-                        : true) ? (
+                      (type === "CATEGORY_OFFERS" ? categoryId : true) ? (
                         <div className="w-full border-t pt-4 mt-4 space-y-2">
                           <h4 className="font-semibold">Items</h4>
                           <FormFieldArray
@@ -363,7 +402,9 @@ export default function Page() {
                             control={control}
                             register={register}
                             setValue={setValue}
-                            categoryId={watch(`sections.${index}.categoryId`)}
+                            categoryData={categoriesOfferData[categoryId] || []}
+                            allMerchants={allMerchants}
+                            categoriesOfferData={categoriesOfferData}
                             watch={watch}
                           />
                         </div>
@@ -387,39 +428,16 @@ function FormFieldArray({
   control,
   register,
   setValue,
-  categoryId,
+  categoryData,
+  allMerchants,
+  categoriesOfferData,
+  setCategoriesOfferData,
   watch,
 }) {
   const { fields, append, remove } = useFieldArray({
     name,
     control,
   });
-  const [merchants, setMerchants] = useState([]);
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    async function fetchMerchant() {
-      try {
-        let res = await fetch("/api/merchants?infoOnly=1");
-        res = await res.json();
-        if (res.success) {
-          setMerchants(res.merchants);
-        } else showError(res.message || "Merchants details fetch error");
-      } catch (error) {
-        console.log(error);
-        showError("client side merchant fetch error");
-      }
-    }
-    async function getData() {
-      const catData = await fetchOffersByCategoryId(categoryId);
-      setData(catData);
-    }
-    if (type === "TOP_MERCHANTS") fetchMerchant();
-    if (type === "CATEGORY_OFFERS") {
-      if (!categoryId) showError("Choose Category First");
-      getData();
-    }
-  }, [type, categoryId]);
 
   return (
     <div className="space-y-2 w-full">
@@ -436,13 +454,15 @@ function FormFieldArray({
                 itemIndex={itemIndex}
                 flattenedCategories={flattenedCategories}
                 setValue={setValue}
-                categoryData={data}
+                categoryData={categoryData}
+                categoriesOfferData={categoriesOfferData}
+                setCategoriesOfferData={setCategoriesOfferData}
                 watch={watch}
               />
             )}
             {type === "TOP_MERCHANTS" && (
               <TopMerchants
-                merchants={merchants}
+                merchants={allMerchants}
                 type={type}
                 name={name}
                 itemIndex={itemIndex}
@@ -530,6 +550,8 @@ function TopCategoryOffers({
   flattenedCategories,
   setValue,
   categoryData,
+  categoriesOfferData,
+  setCategoriesOfferData,
   watch,
 }) {
   const [categoryId, setCategoryId] = useState("");
@@ -547,14 +569,25 @@ function TopCategoryOffers({
   }, [categoryData]);
 
   useEffect(() => {
-    if (!categoryId || type === "CATEGORY_OFFERS") return;
-    async function getData() {
-      const data = await fetchOffersByCategoryId(categoryId);
+  if (!categoryId || type !== "CATEGORY_OFFERS") return;
+
+  const existingData = categoriesOfferData[categoryId];
+
+  if (existingData) {
+    setMerchants(existingData.merchants);
+    setOffers(existingData.offers);
+  } else {
+    fetchOffersByCategoryId(categoryId).then((data) => {
+      setCategoriesOfferData((prev) => ({
+        ...prev,
+        [categoryId]: data,
+      }));
       setMerchants(data.merchants);
       setOffers(data.offers);
-    }
-    getData();
-  }, [categoryId]);
+    });
+  }
+}, [categoryId, type, categoriesOfferData]);
+
 
   // Filter offers based on selected merchant
   const filteredOffers = useMemo(() => {
@@ -649,11 +682,26 @@ function TopMerchants({ merchants, name, itemIndex, setValue, watch }) {
           <SelectValue placeholder="Select Merchant" />
         </SelectTrigger>
         <SelectContent>
-          {merchants.map((m) => (
-            <SelectItem key={m.id} value={m.id}>
-              {m.merchantName}
-            </SelectItem>
-          ))}
+          {merchants.map((merchant) => {
+            const isDisabled =
+              merchant.status !== "active" ||
+              merchant.visibility === "draft" ||
+              merchant.visibility === "private";
+
+            return (
+              <SelectItem
+                key={merchant.id}
+                value={merchant.id}
+                disabled={isDisabled}
+              >
+                {merchant.merchantName}
+                {merchant.status !== "active" && ` (${merchant.status})`}
+                {(merchant.visibility === "draft" ||
+                  merchant.visibility === "private") &&
+                  ` (${merchant.visibility})`}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>

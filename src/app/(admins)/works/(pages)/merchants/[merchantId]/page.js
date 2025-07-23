@@ -333,6 +333,7 @@ function Page() {
       <div className="flex justify-between items-center gap-3 border-b py-2">
         <div className="flex items-center gap-2">
           <Button
+            type="button"
             variant="icon"
             onClick={() => router.back()}
             className="hover:opacity-80"

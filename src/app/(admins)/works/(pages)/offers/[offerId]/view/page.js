@@ -140,7 +140,7 @@ export default function Page() {
           <TableBody>
             <TableRow>
               <TableCell className="font-semibold">Merchant Name</TableCell>
-              <TableCell>{offer.merchant.merchantName || "—"}</TableCell>
+              <TableCell>{offer.merchant?.merchantName ?? "—"}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-semibold">Offer Reference</TableCell>

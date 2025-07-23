@@ -182,7 +182,7 @@ export default function Page() {
             </TableRow>
             <TableRow>
               <TableCell className="font-semibold">Network</TableCell>
-              <TableCell>{merchant.network.name || "—"}</TableCell>
+              <TableCell>{merchant.network?.name ?? "—"}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-semibold">Merchant URL</TableCell>

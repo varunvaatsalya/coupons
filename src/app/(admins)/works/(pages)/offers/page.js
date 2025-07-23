@@ -128,7 +128,7 @@ function Page() {
                   {offer.offerReference}
                 </div>
                 <div className="truncate min-w-20 flex-1 hidden lg:block text-muted-foreground">
-                  {offer.merchant.merchantName ?? "-"}
+                  {offer.merchant?.merchantName ?? "-"}
                 </div>
                 <div className="w-24 text-xs truncate">{offer.offerType}</div>
                 <div className="w-20 flex items-center justify-center gap-1">
@@ -172,11 +172,11 @@ function Page() {
                 <div className="w-12 text-right pr-2">
                   <Link
                     href={`/works/offers/${offer.id}${
-                      offer.status !== "draft" ? "/view" : ""
+                      offer.statusManual !== "draft" ? "/view" : ""
                     }`}
                     className="underline"
                   >
-                    {offer.status !== "draft" ? "View" : "Edit"}
+                    {offer.statusManual !== "draft" ? "View" : "Edit"}
                   </Link>
                 </div>
               </div>
@@ -285,7 +285,7 @@ function OfferFilters({
               <SelectItem value="all">All</SelectItem>
               {merchants.map((merchant) => (
                 <SelectItem key={merchant.id} value={merchant.id}>
-                  {merchant.merchantName}
+                  {merchant?.merchantName}
                 </SelectItem>
               ))}
             </SelectContent>
