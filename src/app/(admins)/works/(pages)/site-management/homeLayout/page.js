@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { showError, showInfo, showSuccess } from "@/utils/toast";
+import { showError, showInfo } from "@/utils/toast";
 import { Input } from "@/components/ui/input";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
@@ -29,11 +29,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import TopOfferSection from "@/components/public/layout/TopOfferSection";
-import CatgOfferSection from "@/components/public/layout/CatgOfferSection";
-import LinkButtonsSection from "@/components/public/layout/LinkButtonsSection";
-import TopMerchant from "@/components/public/layout/TopMerchant";
-import { differenceWith, isEqual } from "lodash";
+// import  from "lodash";
+import HomePreview from "@/components/public/layout/HomePreview";
+import { isEqual } from "lodash";
 
 const sectionTypes = [
   { label: "Top Offers", value: "TOP_OFFERS" },
@@ -43,7 +41,6 @@ const sectionTypes = [
 ];
 
 export default function Page() {
-  const [sections, setSections] = useState([]);
   const [initialSections, setInitialSections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -96,6 +93,7 @@ export default function Page() {
         {
           label: cat.name,
           value: cat.id,
+          path: cat.path,
         },
         ...(cat.children || [])
           .slice()
@@ -103,6 +101,7 @@ export default function Page() {
           .map((child) => ({
             label: `— ${child.name}`,
             value: child.id,
+            path: child.path,
           })),
       ]);
   }, [categories]);
@@ -117,58 +116,58 @@ export default function Page() {
     });
   };
 
-  function diffHomeLayout(oldSections, newSections) {
-    const addedSections = differenceWith(newSections, oldSections, isEqual);
-    const removedSections = differenceWith(oldSections, newSections, isEqual);
-    const updatedSections = [];
+  // function diffHomeLayout(oldSections, newSections) {
+  //   const addedSections = differenceWith(newSections, oldSections, isEqual);
+  //   const removedSections = differenceWith(oldSections, newSections, isEqual);
+  //   const updatedSections = [];
 
-    for (const newSec of newSections) {
-      const oldSec = oldSections.find((s) => s.id === newSec.id);
-      if (oldSec) {
-        if (
-          newSec.label !== oldSec.label ||
-          newSec.type !== oldSec.type ||
-          newSec.cardStyle !== oldSec.cardStyle ||
-          newSec.categoryId !== oldSec.categoryId
-        ) {
-          updatedSections.push({ ...newSec, type: "section" });
-        }
+  //   for (const newSec of newSections) {
+  //     const oldSec = oldSections.find((s) => s.id === newSec.id);
+  //     if (oldSec) {
+  //       if (
+  //         newSec.label !== oldSec.label ||
+  //         newSec.type !== oldSec.type ||
+  //         newSec.cardStyle !== oldSec.cardStyle ||
+  //         newSec.categoryId !== oldSec.categoryId
+  //       ) {
+  //         updatedSections.push({ ...newSec, type: "section" });
+  //       }
 
-        // Now check inner items
-        const addedItems = differenceWith(newSec.items, oldSec.items, isEqual);
-        const removedItems = differenceWith(
-          oldSec.items,
-          newSec.items,
-          isEqual
-        );
-        const updatedItems = [];
+  //       // Now check inner items
+  //       const addedItems = differenceWith(newSec.items, oldSec.items, isEqual);
+  //       const removedItems = differenceWith(
+  //         oldSec.items,
+  //         newSec.items,
+  //         isEqual
+  //       );
+  //       const updatedItems = [];
 
-        for (const newItem of newSec.items) {
-          const oldItem = oldSec.items.find((i) => i.id === newItem.id);
-          if (oldItem && !isEqual(oldItem, newItem)) {
-            updatedItems.push({ ...newItem, sectionId: newSec.id });
-          }
-        }
+  //       for (const newItem of newSec.items) {
+  //         const oldItem = oldSec.items.find((i) => i.id === newItem.id);
+  //         if (oldItem && !isEqual(oldItem, newItem)) {
+  //           updatedItems.push({ ...newItem, sectionId: newSec.id });
+  //         }
+  //       }
 
-        if (addedItems.length || removedItems.length || updatedItems.length) {
-          updatedSections.push({
-            ...newSec,
-            itemChanges: {
-              addedItems,
-              removedItems,
-              updatedItems,
-            },
-          });
-        }
-      }
-    }
+  //       if (addedItems.length || removedItems.length || updatedItems.length) {
+  //         updatedSections.push({
+  //           ...newSec,
+  //           itemChanges: {
+  //             addedItems,
+  //             removedItems,
+  //             updatedItems,
+  //           },
+  //         });
+  //       }
+  //     }
+  //   }
 
-    return {
-      addedSections,
-      removedSections,
-      updatedSections,
-    };
-  }
+  //   return {
+  //     addedSections,
+  //     removedSections,
+  //     updatedSections,
+  //   };
+  // }
 
   async function handleSave(data) {
     console.log(data);
@@ -179,14 +178,10 @@ export default function Page() {
         item.position = itemIndex;
       });
     });
-    const diff = diffHomeLayout(initialSections, data.sections);
-    console.log(diff);
-    if (
-      diff.addedSections?.length === 0 &&
-      diff.removedSections?.length === 0 &&
-      diff.updatedSections?.length === 0
-    ) {
+    const equal = isEqual(initialSections, data.sections);
+    if (equal) {
       showError("No changes Detected!");
+      return;
     }
     try {
       setSaving(true);
@@ -195,7 +190,7 @@ export default function Page() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(diff),
+        body: JSON.stringify({ sections: data.sections }),
       });
 
       const result = await res.json();
@@ -220,16 +215,19 @@ export default function Page() {
         <div className="flex items-center gap-2">
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline">Preview</Button>
+              <Button disabled={saving} variant="outline">
+                Preview
+              </Button>
             </DialogTrigger>
             <DialogContent className="min-w-svw w-svw h-svh flex flex-col px-0 py-2 bg-gray-100 text-black">
               <DialogHeader className="px-4">
                 <DialogTitle>Preview</DialogTitle>
-                <DialogDescription>Preview of Home Page UI</DialogDescription>
+                <DialogDescription className="text-muted">
+                  Preview of Home Page UI
+                </DialogDescription>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto">
                 <HomePreview />
-                {/* <div className="w-12 h-[200vh] bg-red-600 "></div> */}
               </div>
             </DialogContent>
           </Dialog>
@@ -243,7 +241,7 @@ export default function Page() {
       <div className="p-4">
         {loading ? (
           <p className="text-center text-sm text-muted-foreground">
-            Loading layout...
+            Loading layout data...
           </p>
         ) : (
           <div className="space-y-4">
@@ -375,7 +373,6 @@ export default function Page() {
                 );
               })}
             </Accordion>
-            <pre>{JSON.stringify(watch("sections"), null, 2)}</pre>
           </div>
         )}
       </div>
@@ -426,11 +423,11 @@ function FormFieldArray({
 
   return (
     <div className="space-y-2 w-full">
-      <div className=" bg-muted/30 rounded-md flex flex-wrap items-center gap-2 p-2">
+      <div className=" bg-muted/30 rounded-md flex flex-wrap gap-2 p-2">
         {fields.map((item, itemIndex) => (
           <div
             key={item.id}
-            className="flex flex-wrap items-center gap-1 p-2 bg-muted/80 rounded-lg"
+            className="flex items-start gap-1 p-2 bg-muted/80 rounded-lg"
           >
             {(type === "TOP_OFFERS" || type === "CATEGORY_OFFERS") && (
               <TopCategoryOffers
@@ -498,7 +495,6 @@ function FormFieldArray({
 
 async function fetchOffersByCategoryId(categoryId) {
   if (!categoryId) return { offers: [], merchants: [] };
-  showInfo("cat fn called");
   try {
     const res = await fetch(`/api/offers?categoryId=${categoryId}`);
     const data = await res.json();
@@ -537,13 +533,18 @@ function TopCategoryOffers({
   watch,
 }) {
   const [categoryId, setCategoryId] = useState("");
-  const [offers, setOffers] = useState(
-    type === "TOP_OFFERS" ? [] : categoryData?.offers || []
-  );
-  const [merchants, setMerchants] = useState(
-    type === "TOP_OFFERS" ? [] : categoryData?.merchants || []
-  );
+  const [offers, setOffers] = useState([]);
+  const [merchants, setMerchants] = useState([]);
   const [selectedMerchant, setSelectedMerchant] = useState("");
+
+  useEffect(() => {
+    if (categoryData) {
+      setOffers(categoryData.offers || []);
+      setMerchants(categoryData.merchants || []);
+      setCategoryId(categoryData.categoryId || "");
+      setSelectedMerchant("");
+    }
+  }, [categoryData]);
 
   useEffect(() => {
     if (!categoryId || type === "CATEGORY_OFFERS") return;
@@ -561,11 +562,14 @@ function TopCategoryOffers({
     return offers.filter((o) => o.merchantId === selectedMerchant);
   }, [offers, selectedMerchant]);
 
+  const selectedOfferId = watch(`${name}.${itemIndex}.offerId`);
+  const selectedOffer = watch(`${name}.${itemIndex}.offer`);
+
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex gap-2 flex-col w-64 border-r pr-2">
       {type === "TOP_OFFERS" && (
         <Select value={categoryId} onValueChange={(val) => setCategoryId(val)}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Select Category" />
           </SelectTrigger>
           <SelectContent>
@@ -587,7 +591,7 @@ function TopCategoryOffers({
         }}
         disabled={!merchants.length}
       >
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder="Select Merchant" />
         </SelectTrigger>
         <SelectContent>
@@ -600,11 +604,11 @@ function TopCategoryOffers({
       </Select>
 
       <Select
-        value={watch(`${name}.${itemIndex}.offerId`) || ""}
+        value={selectedOfferId || ""}
         onValueChange={(val) => setValue(`${name}.${itemIndex}.offerId`, val)}
-        disabled={!filteredOffers.length}
+        disabled={!filteredOffers.length && !selectedOfferId}
       >
-        <SelectTrigger className="flex-1">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder="Select Offer" />
         </SelectTrigger>
         <SelectContent>
@@ -613,6 +617,13 @@ function TopCategoryOffers({
               {o.title}
             </SelectItem>
           ))}
+          {selectedOfferId &&
+            selectedOffer &&
+            !filteredOffers.some((o) => o.id === selectedOfferId) && (
+              <SelectItem value={selectedOfferId}>
+                {selectedOffer?.offerTitle}
+              </SelectItem>
+            )}
         </SelectContent>
       </Select>
       <ImgData
@@ -645,12 +656,6 @@ function TopMerchants({ merchants, name, itemIndex, setValue, watch }) {
           ))}
         </SelectContent>
       </Select>
-      <ImgData
-        name={name}
-        itemIndex={itemIndex}
-        watch={watch}
-        setValue={setValue}
-      />
     </div>
   );
 }
@@ -678,7 +683,7 @@ function LinkButtons({
         </SelectTrigger>
         <SelectContent>
           {flattenedCategories.map((cat) => (
-            <SelectItem key={cat.value} value={cat.value}>
+            <SelectItem key={cat.value} value={cat.path || ""}>
               {cat.label}
             </SelectItem>
           ))}
@@ -714,14 +719,14 @@ function ImgData({ name, itemIndex, watch, setValue }) {
 
   if (bgUrl) {
     return (
-      <div className="flex items-center gap-3">
-        <div className="h-20 aspect-video relative">
+      <div className="flex justify-center">
+        <div className="h-28 aspect-video relative mt-2">
           <CldImage
             src={watch(`${name}.${itemIndex}.backgroundUrl`)}
             alt="Selected"
             width={400}
             height={400}
-            className="rounded-md object-cover"
+            className="rounded-md h-full w-full object-cover"
           />
           <Button
             type="button"
@@ -746,7 +751,7 @@ function ImgData({ name, itemIndex, watch, setValue }) {
           placeholder="Paste Image ID here"
           value={imageId || ""}
           onChange={(e) => setImageId(e.target.value)}
-          className="w-[250px]"
+          className="w-full"
         />
         <Button
           disabled={fetching || !imageId}
@@ -758,38 +763,4 @@ function ImgData({ name, itemIndex, watch, setValue }) {
       </>
     );
   }
-}
-
-function HomePreview() {
-  const [sections, setSections] = useState([]);
-
-  const sectionComponent = {
-    TOP_OFFERS: TopOfferSection,
-    CATEGORY_OFFERS: CatgOfferSection,
-    TOP_MERCHANTS: TopMerchant,
-    LINK_BUTTONS: LinkButtonsSection,
-  };
-
-  useEffect(() => {
-    async function fetchSection() {
-      const res = await fetch("/api/siteManagement/section?preview=1");
-      const data = await res.json();
-      if (data.success) {
-        setSections(data.sections);
-        console.log(data.sections);
-        showSuccess("fetched");
-      }
-    }
-    fetchSection();
-  }, []);
-
-  return (
-    <div className="px-4 mx-auto max-w-6xl space-y-12 text-black">
-      {sections.map((section, it) => {
-        const SectionModel = sectionComponent[section.type];
-        if (!SectionModel) return null;
-        return <SectionModel key={it} section={section} />;
-      })}
-    </div>
-  );
 }

@@ -47,6 +47,7 @@ export async function GET(req) {
                 select: {
                   id: true,
                   offerTitle: true,
+                  offerHeadline: true,
                   isExclusive: true,
                   isFeatured: true,
                   isHotDeal: true,
@@ -92,6 +93,12 @@ export async function GET(req) {
             id: true,
             sectionId: true,
             offerId: true,
+            offer: {
+              select: {
+                offerHeadline: true,
+                offerTitle: true,
+              },
+            },
             merchantId: true,
             label: true,
             link: true,
@@ -136,101 +143,107 @@ export async function POST(req) {
     return res;
   }
   try {
-    const { addedSections, removedSections, updatedSections } =
-      await req.json();
+    const { sections } = await req.json();
 
-    // Delete Removed Sections
-    if (removedSections?.length) {
-      const removedSectionIds = removedSections.map((s) => s.id);
-
-      // First delete items (if cascade not setup)
-      await prisma.homeSectionItem.deleteMany({
-        where: { sectionId: { in: removedSectionIds } },
-      });
-
-      // Then delete sections
-      await prisma.homeSection.deleteMany({
-        where: { id: { in: removedSectionIds } },
-      });
-    }
-
-    // Add New Sections
-    for (const section of addedSections || []) {
-      const { items, categoryId, ...sectionData } = section;
-      console.log("new adding...");
-      await prisma.homeSection.create({
-        data: {
-          categoryId: categoryId || undefined,
-          ...sectionData,
-          items: {
-            createMany: {
-              data:
-                items?.map((item, index) => {
-                  const { offerId, merchantId, ...rest } = item;
-                  return {
-                    ...rest,
-                    offerId: offerId || undefined,
-                    merchantId: merchantId || undefined,
-                    position: item.position ?? index,
-                  };
-                }) || [],
-            },
-          },
-        },
-      });
-    }
-
-    // Update Sections & Items
-    for (const section of updatedSections || []) {
-      const { itemChanges = {}, ...sectionData } = section;
-      console.log("updating...");
-
-      await prisma.homeSection.update({
-        where: { id: sectionData.id },
-        data: {
-          label: sectionData.label,
-          type: sectionData.type,
-          cardStyle: sectionData.cardStyle,
-          categoryId: sectionData.categoryId,
-          position: sectionData.position,
-        },
-      });
-
-      const { addedItems, removedItems, updatedItems } = itemChanges;
-
-      // --- Remove old items
-      if (removedItems?.length) {
-        await prisma.homeSectionItem.deleteMany({
-          where: { id: { in: removedItems.map((i) => i.id) } },
-        });
-      }
-
-      // --- Add new items
-      if (addedItems?.length) {
-        await prisma.homeSectionItem.createMany({
-          data: addedItems.map((item, index) => ({
-            ...item,
-            sectionId: section.id,
-            position: item.position ?? index,
-          })),
-        });
-      }
-
-      // --- Update existing items
-      for (const item of updatedItems || []) {
-        await prisma.homeSectionItem.update({
-          where: { id: item.id },
+    const existingSections = await prisma.homeSection.findMany({
+      include: { items: true },
+    });
+    for (const sectionData of sections) {
+      if (sectionData.id) {
+        // Section already exists → Update
+        await prisma.homeSection.update({
+          where: { id: sectionData.id },
           data: {
-            label: item.label,
-            link: item.link,
-            offerId: item.offerId,
-            merchantId: item.merchantId,
-            backgroundUrl: item.backgroundUrl,
-            publicId: item.publicId,
-            position: item.position,
+            label: sectionData.label,
+            position: sectionData.position,
+            cardStyle: sectionData.cardStyle,
+            type: sectionData.type,
+            categoryId: sectionData.categoryId || null,
           },
         });
+
+        // Handle section items
+        const existingItems = await prisma.homeSectionItem.findMany({
+          where: { sectionId: sectionData.id },
+        });
+
+        const incomingItemIds = sectionData.items
+          .map((i) => i.id)
+          .filter(Boolean);
+
+        // Delete items that were removed
+        const toDelete = existingItems.filter(
+          (item) => !incomingItemIds.includes(item.id)
+        );
+        for (const item of toDelete) {
+          await prisma.homeSectionItem.delete({ where: { id: item.id } });
+        }
+
+        // Update or Create items
+        for (const item of sectionData.items) {
+          if (item.id) {
+            await prisma.homeSectionItem.update({
+              where: { id: item.id },
+              data: {
+                offerId: item.offerId || null,
+                merchantId: item.merchantId || null,
+                label: item.label,
+                link: item.link,
+                backgroundUrl: item.backgroundUrl,
+                publicId: item.publicId,
+                position: item.position,
+              },
+            });
+          } else {
+            await prisma.homeSectionItem.create({
+              data: {
+                sectionId: sectionData.id,
+                offerId: item.offerId || null,
+                merchantId: item.merchantId || null,
+                label: item.label,
+                link: item.link,
+                backgroundUrl: item.backgroundUrl,
+                publicId: item.publicId,
+                position: item.position,
+              },
+            });
+          }
+        }
+      } else {
+        // Section is new → Create
+        const newSection = await prisma.homeSection.create({
+          data: {
+            label: sectionData.label,
+            position: sectionData.position,
+            cardStyle: sectionData.cardStyle,
+            type: sectionData.type,
+            categoryId: sectionData.categoryId || null,
+          },
+        });
+
+        for (const item of sectionData.items || []) {
+          await prisma.homeSectionItem.create({
+            data: {
+              sectionId: newSection.id,
+              offerId: item.offerId || null,
+              merchantId: item.merchantId || null,
+              label: item.label,
+              link: item.link,
+              backgroundUrl: item.backgroundUrl,
+              publicId: item.publicId,
+              position: item.position,
+            },
+          });
+        }
       }
+    }
+    const incomingSectionIds = sections.map((s) => s.id).filter(Boolean);
+    const toDeleteSections = existingSections.filter(
+      (s) => !incomingSectionIds.includes(s.id)
+    );
+    for (const s of toDeleteSections) {
+      await prisma.homeSectionItem.deleteMany({ where: { sectionId: s.id } });
+      await prisma.homeSection.delete({ where: { id: s.id } });
     }
 
     return NextResponse.json({ success: true });

@@ -83,7 +83,6 @@ export async function GET(req) {
           merchantId: o.merchantId,
           merchantName: o.merchant?.merchantName || "Unknown",
         }));
-        console.log(offers)
 
         return NextResponse.json({ success: true, offers: formatted });
       } catch (error) {

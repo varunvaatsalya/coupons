@@ -9,19 +9,17 @@ function CatgOfferSection({ section }) {
       className="mb-12"
       aria-labelledby={`section-heading-${section.label}`}
     >
-      <header>
-        <Heading
-          title={section.label}
-          linkLabel={section.linkLabel}
-          link={section.link}
-        />
-      </header>
+      <Heading
+        title={section.label}
+        linkLabel={"View All " + (section.label ? section.label : "")}
+        link={`/categories/${section.category?.path ?? ""}`}
+
+      />
 
       <div
         className={
-          "grid grid-cols-1 xs:grid-cols-2  gap-x-2 gap-y-4 " + isDualImg
-            ? "md:grid-cols-3"
-            : "md:grid-cols-4"
+          "grid grid-cols-1 xs:grid-cols-2  gap-x-2 gap-y-4 " +
+          (isDualImg ? "md:grid-cols-3" : "md:grid-cols-4")
         }
       >
         {Array.isArray(section.items) &&

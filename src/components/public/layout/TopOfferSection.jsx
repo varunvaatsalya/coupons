@@ -8,13 +8,11 @@ function TopOfferSection({ section }) {
       className="mb-12"
       aria-labelledby={`section-heading-${section.label}`}
     >
-      <header>
-        <Heading
-          title={section.label}
-          linkLabel="View All Top Offers"
-          link="topOffers"
-        />
-      </header>
+      <Heading
+        title={section.label}
+        linkLabel="View All Top Offers"
+        link="/topOffers"
+      />
 
       <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-x-2 gap-y-4">
         {Array.isArray(section.items) &&
