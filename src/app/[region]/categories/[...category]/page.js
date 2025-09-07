@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useParams, usePathname } from "next/navigation";
-import Navbar from "@/components/public/Navbar";
+import Navbar from "@/components/public/Navbar/NavbarClient";
 import Footer from "@/components/public/Footer";
 import Header from "@/components/public/Header";
 import Link from "next/link";

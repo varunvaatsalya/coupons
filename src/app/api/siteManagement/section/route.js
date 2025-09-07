@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyTokenWithLogout } from "@/utils/jwt";
+import { getSectionsFromDB } from "@/app/services/sectionService";
 
 export async function GET(req) {
   let preview = req.nextUrl.searchParams.get("preview");
@@ -26,53 +27,7 @@ export async function GET(req) {
 
   try {
     if (preview === "1") {
-      const sections = await prisma.homeSection.findMany({
-        orderBy: {
-          position: "asc",
-        },
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-              path: true, // jo fields tum chaho
-            },
-          },
-          items: {
-            orderBy: {
-              position: "asc",
-            },
-            include: {
-              offer: {
-                select: {
-                  id: true,
-                  offerTitle: true,
-                  offerHeadline: true,
-                  isExclusive: true,
-                  isFeatured: true,
-                  isHotDeal: true,
-                  merchant: {
-                    select: {
-                      id: true,
-                      merchantName: true,
-                      logoUrl: true,
-                      logoPublicId: true,
-                    },
-                  },
-                },
-              },
-              merchant: {
-                select: {
-                  id: true,
-                  merchantName: true,
-                  logoUrl: true,
-                  logoPublicId: true,
-                },
-              },
-            },
-          },
-        },
-      });
+      const sections = await getSectionsFromDB();
 
       return NextResponse.json({ success: true, sections });
     }

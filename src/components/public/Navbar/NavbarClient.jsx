@@ -4,49 +4,21 @@ import React, { useEffect, useRef, useState } from "react";
 import { FaAngleDown, FaAngleRight } from "react-icons/fa";
 import { FaArrowLeft } from "react-icons/fa6";
 
-function Navbar() {
+function NavbarClient({ merchants, categories, blogs }) {
   const NavItems = [
-    {
-      id: 0,
-      label: "Trending",
-      isDropdown: true,
-    },
-    {
-      id: 1,
-      label: "Categories",
-      isDropdown: true,
-    },
-    {
-      id: 2,
-      label: "VIP",
-      isDropdown: false,
-    },
-    {
-      id: 3,
-      label: "Savings Guides",
-      isDropdown: true,
-    },
-    {
-      id: 4,
-      label: "Code Guarantee",
-      isDropdown: false,
-    },
-    {
-      id: 5,
-      label: "App",
-      isDropdown: false,
-    },
-    {
-      id: 6,
-      label: "DealFinder",
-      isDropdown: false,
-    },
+    { id: 0, label: "Trending", isDropdown: true },
+    { id: 1, label: "Categories", isDropdown: true },
+    { id: 2, label: "VIP", isDropdown: false },
+    { id: 3, label: "Savings Guides", isDropdown: true },
+    { id: 4, label: "Code Guarantee", isDropdown: false },
+    // { id: 5, label: "App", isDropdown: false },
+    // { id: 6, label: "DealFinder", isDropdown: false },
   ];
 
   const [openDropdown, setOpenDropdown] = useState(false);
   const [activeNavItem, setActiveNavItem] = useState(null);
 
-  const dropdownRef = useRef(null); // ref for dropdown content
+  const dropdownRef = useRef(null);
   const navToggleRef = useRef(null);
 
   const handleNavClick = (item) => {
@@ -65,7 +37,6 @@ function Navbar() {
     }
   };
 
-  // 🔒 Close dropdown on outside click or scroll
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -118,7 +89,12 @@ function Navbar() {
             className="bg-white max-w-6xl mx-auto p-4 shadow-md rounded-b-lg"
             ref={dropdownRef}
           >
-            <NavbarDropdownContent activeItem={activeNavItem} />
+            <NavbarDropdownContent
+              activeItem={activeNavItem}
+              merchants={merchants}
+              categories={categories}
+              blogs={blogs}
+            />
           </div>
         </div>
       )}
@@ -126,158 +102,52 @@ function Navbar() {
   );
 }
 
-export default Navbar;
+export default NavbarClient;
 
-const NavbarDropdownContent = ({ activeItem }) => {
+const NavbarDropdownContent = ({
+  activeItem,
+  merchants,
+  categories,
+  blogs = [],
+}) => {
+  console.log("dropdownconetnt", activeItem, merchants, categories, blogs);
   if (activeItem === "Trending") {
     return (
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 gap-y-6">
-        {["Amazon", "Flipkart", "Meesho", "Ajio", "Nykaa", "Snapdeal"].map(
-          (company, index) => (
+        {Array.isArray(merchants) &&
+          merchants.map((company, index) => (
             <Link
               key={index}
-              href="/in/adidas"
+              href={`/${company.merchantName?.toLowerCase()}`}
               className="block text-sm text-teal-600 font-semibold hover:underline truncate"
-              title={company}
+              title={company.merchantName}
             >
-              {company}
+              {company.merchantName}
             </Link>
-          )
-        )}
+          ))}
       </div>
     );
   }
 
   if (activeItem === "Categories") {
-    const categories = [
-      {
-        id: 1,
-        name: "Electronics",
-        subcategories: [
-          "Mobiles",
-          "Laptops",
-          "Accessories",
-          "Cameras",
-          "Smart Watches",
-        ],
-      },
-      {
-        id: 2,
-        name: "Fashion",
-        subcategories: ["Men", "Women", "Kids", "Footwear"],
-      },
-      {
-        id: 3,
-        name: "Home & Kitchen",
-        subcategories: ["Furniture", "Cookware", "Decor", "Lighting"],
-      },
-      {
-        id: 4,
-        name: "Beauty",
-        subcategories: ["Skincare", "Makeup", "Haircare"],
-      },
-      {
-        id: 5,
-        name: "Sports",
-        subcategories: ["Cricket", "Gym", "Outdoor", "Cycling"],
-      },
-      {
-        id: 10,
-        name: "Electronics",
-        subcategories: [
-          "Mobiles",
-          "Laptops",
-          "Accessories",
-          "Cameras",
-          "Smart Watches",
-        ],
-      },
-      {
-        id: 20,
-        name: "Fashion",
-        subcategories: ["Men", "Women", "Kids", "Footwear"],
-      },
-      {
-        id: 30,
-        name: "Home & Kitchen",
-        subcategories: ["Furniture", "Cookware", "Decor", "Lighting"],
-      },
-      {
-        id: 40,
-        name: "Beauty",
-        subcategories: ["Skincare", "Makeup", "Haircare"],
-      },
-      {
-        id: 50,
-        name: "Sports",
-        subcategories: ["Cricket", "Gym", "Outdoor", "Cycling"],
-      },
-      {
-        id: 11,
-        name: "Electronics",
-        subcategories: [
-          "Mobiles",
-          "Laptops",
-          "Accessories",
-          "Cameras",
-          "Smart Watches",
-        ],
-      },
-      {
-        id: 21,
-        name: "Fashion",
-        subcategories: ["Men", "Women", "Kids", "Footwear"],
-      },
-      {
-        id: 31,
-        name: "Home & Kitchen",
-        subcategories: ["Furniture", "Cookware", "Decor", "Lighting"],
-      },
-      {
-        id: 41,
-        name: "Beauty",
-        subcategories: ["Skincare", "Makeup", "Haircare"],
-      },
-      {
-        id: 51,
-        name: "Sports",
-        subcategories: ["Cricket", "Gym", "Outdoor", "Cycling"],
-      },
-      // Add more if needed
-    ];
-
     return <CategorySubcategoryPanel categories={categories} />;
   }
 
   if (activeItem === "Savings Guides") {
-    const guides = [
-      {
-        title: "How to Save on Fashion",
-        link: "#",
-      },
-      {
-        title: "Best Cashback Apps",
-        link: "#",
-      },
-      {
-        title: "Festival Sale Guide",
-        link: "#",
-      },
-    ];
-
     return (
       <div className="flex flex-wrap gap-4">
-        {guides.map((guide, i) => (
-          <a
-            key={i}
-            href={guide.link}
-            className="w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.5rem)] bg-teal-100 p-3 rounded shadow hover:bg-teal-200 transition"
-          >
-            <div className="text-sm font-semibold text-gray-900 line-clamp-2">
-              {guide.title}
-            </div>
-          </a>
-        ))}
+        {Array.isArray(blogs) &&
+          blogs.map((guide, i) => (
+            <a
+              key={i}
+              href={guide.link}
+              className="w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.5rem)] bg-teal-100 p-3 rounded shadow hover:bg-teal-200 transition"
+            >
+              <div className="text-sm font-semibold text-gray-900 line-clamp-2">
+                {guide.title}
+              </div>
+            </a>
+          ))}
         <div className="w-full mt-4">
           <a
             href="#"
@@ -335,8 +205,8 @@ const CategorySubcategoryPanel = ({ categories }) => {
               </div>
 
               <div>
-                {selectedCategory.subcategories.map((sub, i) => (
-                  <Link key={i} href="/in/categories/fashion/mens">
+                {selectedCategory.children.map((sub, i) => (
+                  <Link key={i} href={`/categories/${sub?.path ?? ""}`}>
                     <div className="px-4 py-3 border-b text-gray-700 hover:bg-gray-100">
                       {sub}
                     </div>

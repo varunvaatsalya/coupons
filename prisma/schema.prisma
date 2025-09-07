@@ -80,34 +80,21 @@ enum LoginStatus {
 // ------------------- Merchant Model -------------------
 
 model Merchant {
-  id                    String      @id @default(uuid()) @db.Uuid
+  id                    String              @id @default(uuid()) @db.Uuid
   merchantName          String?
-  merchantSeoName       String?
-  description           String?
-  translatedDescription String?
   type                  String?
   logoUrl               String?
   logoPublicId          String?
-  status                String      @default("draft")
+  status                String              @default("draft")
   visibility            String?
-  geographicMarket      String?
-  networkId             String?     @db.Uuid
-  network               Network?    @relation(fields: [networkId], references: [id])
-  currency              String?
-  staff                 String?
-  merchantUrl           String?
-  affiliateUrl          String?
-  isPriority            Boolean     @default(false)
-  isPremium             Boolean     @default(false)
-  pageTitle             String?
-  metaDescription       String?
-  metaKeywords          String[]
-  pageHeading           String?
+  countries             GeographicCountry[] @relation("MerchantCountries")
+  networkId             String?             @db.Uuid
+  network               Network?            @relation(fields: [networkId], references: [id])
   howToText             HowToStep[]
   howToOverviewImageUrl String?
   overviewImageUrl      String?
   networkMerchantId     String?
-  isCPTAvailable        Boolean     @default(false)
+  isCPTAvailable        Boolean             @default(false)
   androidAppUrl         String?
   iosAppUrl             String?
   windowsAppUrl         String?
@@ -119,7 +106,30 @@ model Merchant {
   createdById   String?  @db.Uuid
   createdBy     User?    @relation("CreatedMerchants", fields: [createdById], references: [id])
 
-  homeSectionItems HomeSectionItem[] @relation("MerchantHomeSectionItems")
+  homeSectionItems HomeSectionItem[]      @relation("MerchantHomeSectionItems")
+  localizations    MerchantLocalization[]
+}
+
+model MerchantLocalization {
+  id         String            @id @default(uuid()) @db.Uuid
+  merchantId String            @db.Uuid
+  countryId  String            @db.Uuid
+  merchant   Merchant          @relation(fields: [merchantId], references: [id])
+  country    GeographicCountry @relation(fields: [countryId], references: [id])
+
+  merchantSeoName       String?
+  description           String?
+  translatedDescription String?
+  merchantUrl           String?
+  affiliateUrl          String?
+  isPriority            Boolean  @default(false)
+  isPremium             Boolean  @default(false)
+  pageTitle             String?
+  metaDescription       String?
+  metaKeywords          String[]
+  pageHeading           String?
+
+  @@unique([merchantId, countryId]) // avoid duplicates per country
 }
 
 // ------------------- Network Model -------------------
@@ -187,23 +197,26 @@ model GeographicCountry {
   currencySymbol String? // Optional, e.g. ₹ or $
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  offers     Offer[]
+  merchants  Merchant[] @relation("MerchantCountries")
+  categories Category[] @relation("CategoryCountries")
+
+  merchantLocalizations MerchantLocalization[]
+  localizations         CategoryLocalization[]
 }
 
 model Category {
-  id              String     @id @default(uuid()) @db.Uuid
-  name            String
-  translatedName  String?
-  description     String?
-  icon            String?
-  country         String?
-  pageTitle       String?
-  metaDescription String?
-  metaKeywords    String[]
-  parentId        String?    @db.Uuid
-  parent          Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
-  children        Category[] @relation("CategoryToCategory")
-  path            String     @default("") // "home/fashion/mens"
-  level           Int        @default(0)
+  id        String              @id @default(uuid()) @db.Uuid
+  name      String
+  icon      String?
+  countries GeographicCountry[] @relation("CategoryCountries")
+
+  parentId String?    @db.Uuid
+  parent   Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToCategory")
+  path     String     @default("") // "home/fashion/mens"
+  level    Int        @default(0)
 
   navbarOrder   Int?
   offersCurrent Offer[]       @relation("CurrentCategories")
@@ -212,7 +225,26 @@ model Category {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
+  localizations CategoryLocalization[]
+
   @@index([path])
+}
+
+model CategoryLocalization {
+  id         String @id @default(uuid()) @db.Uuid
+  categoryId String @db.Uuid
+  countryId  String @db.Uuid
+
+  category Category          @relation(fields: [categoryId], references: [id])
+  country  GeographicCountry @relation(fields: [countryId], references: [id])
+
+  translatedName  String?
+  description     String?
+  pageTitle       String?
+  metaDescription String?
+  metaKeywords    String[]
+
+  @@unique([categoryId, countryId])
 }
 
 model Offer {
@@ -251,8 +283,8 @@ model Offer {
   isHotDeal    Boolean @default(false)
   isNewsletter Boolean @default(false)
 
-  country          String?
-  currency         String?
+  countryId        String            @db.Uuid
+  country          GeographicCountry @relation(fields: [countryId], references: [id])
   cashbackId       String? // If linked to a cashback table
   commission       Float?
   sharedCommission Float?
@@ -334,4 +366,37 @@ enum HomeSectionType {
 enum HomeCardStyle {
   SIMPLE_BG // small card with just image + title
   BG_WITH_LOGO // large card with background + logo
+}
+
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  parentId    String?
+  parent      Folder?  @relation("SubFolders", fields: [parentId], references: [id])
+  subFolders  Folder[] @relation("SubFolders")
+  files       File[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model File {
+  id          String   @id @default(cuid())
+  folderId    String
+  folder      Folder   @relation(fields: [folderId], references: [id])
+  fileName    String // Display name
+  filePath    String // Actual storage path
+  fileId      String // Actual storage id
+  fileType    FileType
+  size        Int? // File size in bytes
+  mimeType    String? // eg: image/png, video/mp4
+  keywords    String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  OTHER
 }

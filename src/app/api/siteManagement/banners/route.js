@@ -38,7 +38,7 @@ export async function GET(req) {
       { status: 200 }
     );
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return NextResponse.json(
       { message: "Failed to fetch banners details", success: false },
       { status: 500 }
@@ -48,24 +48,47 @@ export async function GET(req) {
 
 export async function POST(req) {
   try {
-    const { banners } = await req.json();
+    const body = await req.json();
+    const incomingBanners = body.banners;
 
-    const promises = banners.map((banner, index) => {
-      const { id, ...data } = banner;
+    const existingBanners = await prisma.carouselImage.findMany();
 
-      if (id) {
-        return prisma.carouselImage.update({
-          where: { id },
+    const incomingIds = incomingBanners.filter((b) => b.id).map((b) => b.id);
+    const existingIds = existingBanners.map((b) => b.id);
+
+    const idsToDelete = existingIds.filter((id) => !incomingIds.includes(id));
+
+    await prisma.carouselImage.deleteMany({
+      where: {
+        id: { in: idsToDelete },
+      },
+    });
+
+    for (let i = 0; i < incomingBanners.length; i++) {
+      const banner = incomingBanners[i];
+
+      const data = {
+        name: banner.name,
+        position: i,
+        largeUrl: banner.largeUrl,
+        mediumUrl: banner.mediumUrl,
+        smallUrl: banner.smallUrl,
+        largeId: banner.largeId,
+        mediumId: banner.mediumId,
+        smallId: banner.smallId,
+      };
+
+      if (banner.id) {
+        await prisma.carouselImage.update({
+          where: { id: banner.id },
           data,
         });
       } else {
-        return prisma.carouselImage.create({
+        await prisma.carouselImage.create({
           data,
         });
       }
-    });
-
-    await Promise.all(promises);
+    }
 
     return NextResponse.json({
       success: true,

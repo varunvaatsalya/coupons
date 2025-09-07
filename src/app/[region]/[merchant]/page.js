@@ -1,16 +1,16 @@
 "use client";
 import Footer from "@/components/public/Footer";
 import Header from "@/components/public/Header";
-import Navbar from "@/components/public/Navbar";
-import { useParams } from "next/navigation";
+import Navbar from "@/components/public/Navbar/NavbarClient";
 import React from "react";
 import img1 from "@/app/[region]/assets/img1.jpg";
 import Image from "next/image";
 import { FaRegHeart } from "react-icons/fa";
 import OfferLists from "@/components/public/OfferLists";
 
-function Page() {
-  const params = useParams();
+function Page({ params }) {
+  const { merchant } = params;
+  console.log(merchant)
   return (
     <main className="flex flex-col min-h-svh">
       <Header />

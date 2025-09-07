@@ -64,7 +64,7 @@ function Page() {
     <div className="h-[100dvh] w-full text-sm font-sans p-2 space-y-2">
       <div className="flex justify-between items-center gap-2">
         <div className="font-bold text-xl px-2">Your Merchants</div>
-        <Button asChild className="flex items-center gap-1">
+        <Button asChild className="flex items-center gap-1 bg-coupons">
           <Link href="/works/merchants/new">
             <IoIosAddCircleOutline />
             <div>Add Merchant</div>
@@ -264,7 +264,7 @@ function MerchantFilters({
             }
           >
             <SelectTrigger className="col-span-1">
-              <SelectValue placeholder="Netowks" />
+              <SelectValue placeholder="Networks" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>

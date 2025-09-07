@@ -21,8 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { showError } from "@/utils/toast";
+import { useAdminUserAuth } from "@/contexts/AdminUserAuthContext";
 
 function Page() {
+  const { setAdminUser } = useAdminUserAuth();
   const router = useRouter();
   const {
     register,
@@ -50,7 +52,7 @@ function Page() {
 
       result = await result.json();
       if (result.success) {
-        console.log("successfully loggedin redirecting...");
+        if (result.user) setAdminUser(result.user);
         router.replace("/works");
       } else {
         showError(result.message);
@@ -135,7 +137,7 @@ function Page() {
                   )}
                 </div>
                 <div className="flex flex-col gap-3">
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full" disabled={submitting}>
                     {submitting && (
                       <BiLoaderCircle className="size-5 animate-spin" />
                     )}

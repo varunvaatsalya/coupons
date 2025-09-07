@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Carousel,
   CarouselContent,
@@ -9,12 +8,13 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import Image from "@/components/public/ImageWithFallBack";
 
 import img1 from "@/app/[region]/assets/img1.jpg";
 import img2 from "@/app/[region]/assets/img2.jpg";
 import img3 from "@/app/[region]/assets/img3.jpg";
 
-const images = [
+const imagesData = [
   {
     square: img1, // 1:1
     portrait: img1, // 1:2
@@ -32,16 +32,16 @@ const images = [
   },
 ];
 
-export function CarouselImages() {
-  const [selected, setSelected] = React.useState(0);
-  const emblaRef = React.useRef(null);
+export default function CarouselImageLayout({images}) {
+  const [selected, setSelected] = useState(0);
+  const emblaRef = useRef(null);
 
-  const onSelect = React.useCallback(() => {
+  const onSelect = useCallback(() => {
     if (!emblaRef.current) return;
     setSelected(emblaRef.current.selectedScrollSnap());
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       if (emblaRef.current) {
         emblaRef.current.scrollNext();
@@ -50,6 +50,13 @@ export function CarouselImages() {
 
     return () => clearInterval(interval);
   }, []);
+
+  const getFallbackImage = (img, priority) => {
+    for (const key of priority) {
+      if (img[key] && img[key]?.trim() !== "") return img[key];
+    }
+    return null;
+  };
 
   return (
     <div className="relative w-full group py-6 bg-gray-100">
@@ -77,11 +84,12 @@ export function CarouselImages() {
               <div
                 className="bg-white rounded-xl overflow-hidden w-full flex items-center justify-center
                 aspect-[1/1] sm:aspect-[2/1] lg:aspect-[10/3]"
+                priority="true"
               >
                 {/* Responsive Image Loader */}
                 <div className="block sm:hidden relative w-full h-full">
                   <Image
-                    src={img.square}
+                    src={getFallbackImage(img, ["square", "portrait", "landscape"])}
                     alt={`Image ${index} square`}
                     fill
                     className="object-contain"
@@ -90,7 +98,7 @@ export function CarouselImages() {
 
                 <div className="hidden sm:block lg:hidden relative w-full h-full">
                   <Image
-                    src={img.portrait}
+                    src={getFallbackImage(img, ["portrait", "square", "landscape"])}
                     alt={`Image ${index} portrait`}
                     fill
                     className="object-contain"
@@ -99,7 +107,7 @@ export function CarouselImages() {
 
                 <div className="hidden lg:block relative w-full h-full">
                   <Image
-                    src={img.landscape}
+                    src={getFallbackImage(img, ["landscape", "portrait", "square"])}
                     alt={`Image ${index} landscape`}
                     fill
                     className="object-contain"

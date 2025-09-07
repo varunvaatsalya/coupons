@@ -1,5 +1,4 @@
 "use client";
-// components/CarouselUploader.tsx
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import {
@@ -17,18 +16,21 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { showError, showSuccess } from "@/utils/toast";
 import Loading from "@/components/parts/Loading";
+import { isEqual } from "lodash";
+import Image from "@/components/public/ImageWithFallBack";
 
 export default function Page() {
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
   const originalBannersRef = useRef([]);
+  const [initalBanners, setInitialBanners] = useState([]);
 
-  const { register, control, setValue, getValues, watch, reset } = useForm({
-    defaultValues: {
-      banners: [],
-    },
-  });
-  let banner = watch("banner");
+  const { handleSubmit, register, control, setValue, getValues, watch, reset } =
+    useForm({
+      defaultValues: {
+        banners: [],
+      },
+    });
 
   const { fields, append, remove, move } = useFieldArray({
     control,
@@ -44,7 +46,7 @@ export default function Page() {
         if (data.success) {
           // data.banners?.sort((a, b) => (a.position || 0) - (b.position || 0));
           reset({ banners: data.banners });
-          originalBannersRef.current = data.banners;
+          setInitialBanners(data.banners);
         } else showError(data.message || "Faild to fetch banenrs");
       } catch (error) {
         showError("Client Side Fetch Error");
@@ -56,49 +58,11 @@ export default function Page() {
     loadBanners();
   }, []);
 
-  function getChangedBanners(current, original) {
-    const changed = [];
-
-    for (let i = 0; i < current.length; i++) {
-      const curr = { ...current[i], position: i };
-
-      if (!curr.id) {
-        changed.push(curr); // New entry
-        continue;
-      }
-
-      const orig = original.find((o) => o.id === curr.id);
-      if (!orig) continue;
-
-      const diff = {};
-      let hasChanges = false;
-
-      for (const key of Object.keys(curr)) {
-        if (curr[key] !== orig[key]) {
-          diff[key] = curr[key];
-          hasChanges = true;
-        }
-      }
-
-      if (hasChanges) {
-        diff.id = curr.id;
-        changed.push(diff);
-      }
-    }
-
-    return changed;
-  }
-
-  async function handleSave() {
-    const currentBanners = getValues("banners");
-    const changed = getChangedBanners(
-      currentBanners,
-      originalBannersRef.current
-    );
-    console.log(currentBanners, originalBannersRef.current);
-
-    if (changed.length === 0) {
-      showError("No changes to save.");
+  async function handleSave(data) {
+    if (saving) return;
+    const equal = isEqual(initalBanners, data.banners);
+    if (equal) {
+      showError("No changes Detected!");
       return;
     }
     try {
@@ -108,13 +72,13 @@ export default function Page() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ banners: changed }),
+        body: JSON.stringify(data),
       });
 
       const result = await res.json();
       if (result.success) {
         showSuccess(result.message || "Saved Successfully!");
-        originalBannersRef.current = getValues("banners");
+        setInitialBanners(data.banners);
       } else {
         showError(result.message || "error while saving!");
       }
@@ -127,24 +91,35 @@ export default function Page() {
   }
 
   return (
-    <div className="p-3 min-h-svh overflow-y-auto">
+    <form
+      onSubmit={handleSubmit(handleSave)}
+      className="p-3 min-h-svh overflow-y-auto"
+    >
       <div className="flex justify-between items-center gap-2">
         <div className="font-bold text-2xl px-3">Banners</div>
-        <Button
-          onClick={() =>
-            append({
-              name: "",
-              largeUrl: "",
-              largeId: "",
-              mediumUrl: "",
-              mediumId: "",
-              smallUrl: "",
-              smallId: "",
-            })
-          }
-        >
-          Add New Banner
-        </Button>
+        <div className="flex gap-2 items-center">
+          <Button
+            variant="outline"
+            type="button"
+            disabled={saving}
+            onClick={() =>
+              append({
+                name: "",
+                largeUrl: "",
+                largeId: "",
+                mediumUrl: "",
+                mediumId: "",
+                smallUrl: "",
+                smallId: "",
+              })
+            }
+          >
+            Add New Banner
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving..." : "Save Banners"}
+          </Button>
+        </div>
       </div>
       <div className="text-muted-foreground px-2 text-center">
         List of all banners details
@@ -164,6 +139,7 @@ export default function Page() {
               className="border p-4 rounded-lg space-y-4 bg-muted/30"
             >
               <div className="flex justify-between items-center gap-2">
+                <div>{index + 1 + "."}</div>
                 <Input
                   placeholder="Enter banner name"
                   className="w-full border px-3 py-2 rounded-md"
@@ -205,15 +181,11 @@ export default function Page() {
             </div>
           );
         })}
-        {
-          <Button disabled={saving} onClick={handleSave}>
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        }
       </div>
-    </div>
+    </form>
   );
 }
+
 function ImageUploadBlock({ size, index, url, publicId, setValue }) {
   const [showDialog, setShowDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -252,13 +224,15 @@ function ImageUploadBlock({ size, index, url, publicId, setValue }) {
   };
 
   return (
-    <div className={`${aspectRatioMap[size]} h-32`}>
+    <div className={`${aspectRatioMap[size]} h-32 overflow-auto`}>
       {url && publicId ? (
         <div
           className={`relative w-full ${aspectRatioMap[size]} border rounded overflow-hidden`}
         >
-          <img
+          <Image
             src={url}
+            height={800}
+            width={800}
             alt={`${size} preview`}
             className="w-full h-full object-contain bg-red-100"
           />

@@ -1,7 +1,7 @@
 "use client"
 import Footer from "@/components/public/Footer";
 import Header from "@/components/public/Header";
-import Navbar from "@/components/public/Navbar";
+import Navbar from "@/components/public/Navbar/NavbarClient";
 import Image from "next/image";
 import React from "react";
 import img5 from "@/app/[region]/assets/img1.jpg";

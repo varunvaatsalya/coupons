@@ -1,21 +1,15 @@
-"use client";
-import { BsStars } from "react-icons/bs";
 import React from "react";
-import { CarouselImages } from "../../components/public/ImageCarousel";
+import { BsStars } from "react-icons/bs";
+import CarouselImages from "@/components/public/carousalImage/CarouselImages";
 import handIcon from "./assets/icon-hand-heart.svg";
-// import Image from "next/image";
-import Link from "next/link";
-import img1 from "./assets/img1.jpg";
-import img2 from "./assets/img2.jpg";
 import Header from "@/components/public/Header";
-import Navbar from "@/components/public/Navbar";
+import Navbar from "@/components/public/Navbar/Navbar";
 import Footer from "@/components/public/Footer";
-import { usePathname } from "next/navigation";
 import Image from "@/components/public/ImageWithFallBack";
-// import { Image } from "@/components/public/Image";
+import MainLayout from "@/components/public/layout/MainLayout";
 
 function Page() {
-  const pathname = usePathname();
+  // const pathname = usePathname();
 
   return (
     <main className="">
@@ -76,7 +70,7 @@ function Page() {
           </div>
         </div>
       </div>
-      <div className="px-4 mx-auto max-w-6xl space-y-12">
+      {/* <div className="px-4 mx-auto max-w-6xl space-y-12">
         <div className="mb-12">
           <div className="mb-2 md:mb-6 flex items-center relative">
             <h3 className="w-full md:text-center md:text-3xl font-bold">
@@ -232,7 +226,6 @@ function Page() {
                 itemScope
                 itemType="https://schema.org/Organization"
               >
-                {/* Logo - Floating Circular Card */}
                 <div className="relative z-10 -mb-2">
                   <div
                     className="w-28 h-28 rounded-full bg-white shadow-md border p-2"
@@ -248,7 +241,6 @@ function Page() {
                   </div>
                 </div>
 
-                {/* Name - Rectangular Card */}
                 <div className="w-28 p-1.5 pt-2.5 bg-white rounded-lg shadow-md text-center border z-0">
                   <h3
                     className="text-xs font-bold text-gray-800 uppercase tracking-wide line-clamp-1"
@@ -353,7 +345,8 @@ function Page() {
             ))}
           </div>
         </div>
-      </div>
+      </div> */}
+      <MainLayout />
       <Footer />
     </main>
   );
