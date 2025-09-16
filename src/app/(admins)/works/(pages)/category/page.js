@@ -229,6 +229,7 @@ import {
   isValidIconFormat,
 } from "@/utils/getDynamicIcon";
 import Link from "next/link";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 function CategoryFormDialog({ open, setOpen, onSubmit, defaultValues = {} }) {
   const defaultForm = {
@@ -282,148 +283,150 @@ function CategoryFormDialog({ open, setOpen, onSubmit, defaultValues = {} }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-2 py-4 max-h-[70vh] overflow-y-auto px-3">
-          <div>
-            <Label className={"p-2"}>Name</Label>
-            <Input
-              name="name"
-              placeholder="e.g. Fashion"
-              value={form.name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div>
-            <Label className={"p-2"}>Translated Name</Label>
-            <Input
-              name="translatedName"
-              placeholder="e.g. Fashion"
-              value={form.translatedName}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="col-span-2">
-            <Label className={"p-2"}>Description</Label>
-            <Textarea
-              name="description"
-              placeholder="Short description about this category"
-              value={form.description}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <Label className={"p-2"}>Country</Label>
-            <Input
-              name="country"
-              placeholder="e.g. India"
-              value={form.country}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <Label className={"p-2"}>Page Title</Label>
-            <Input
-              name="pageTitle"
-              placeholder="SEO title for this category"
-              value={form.pageTitle}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="col-span-2">
-            <Label className={"p-2"}>Meta Description</Label>
-            <Textarea
-              name="metaDescription"
-              placeholder="SEO meta description"
-              value={form.metaDescription}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="col-span-2">
-            <Label className={"p-2"}>
-              Icon (Icon format){" "}
-              <Link
-                href={`https://react-icons.github.io/react-icons/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 text-sm underline hover:text-blue-800"
-              >
-                Browse Icons
-              </Link>
-            </Label>
-            <Input
-              name="icon"
-              value={form.icon}
-              onChange={handleChange}
-              placeholder="e.g. fa/FaAngleUp"
-            />
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="text-muted-foreground text-sm">Preview:</span>
-            <div className="px-4 py-3 border bg-muted rounded-lg">
-              {getDynamicIconComponent(form.icon, 40)}
-            </div>
-          </div>
-
-          <div className="col-span-2">
-            <Label className="p-2">Meta Keywords</Label>
-            <div className="flex flex-wrap items-center gap-2 border rounded-md px-3 py-2 min-h-[42px] bg-background">
-              {form.metaKeywords.map((kw, i) => (
-                <Badge
-                  key={i}
-                  variant="secondary"
-                  className="flex items-center gap-1 px-2 py-1 text-sm"
-                >
-                  <div className="pb-0.5">{kw}</div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-4 w-4 p-0 text-muted-foreground hover:text-destructive"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        metaKeywords: prev.metaKeywords.filter(
-                          (_, idx) => idx !== i
-                        ),
-                      }))
-                    }
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-
+        <ScrollArea className="max-h-[70vh] px-3 py-4">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className={"p-2"}>Name</Label>
               <Input
-                type="text"
-                className="border-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-auto p-0 text-sm px-2"
-                placeholder="Type & press comma"
-                value={form.newKeyword || ""}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, newKeyword: e.target.value }))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "," || e.key === "Enter") {
-                    e.preventDefault();
-                    const val = form.newKeyword?.trim();
-                    if (val && !form.metaKeywords.includes(val)) {
-                      setForm((prev) => ({
-                        ...prev,
-                        metaKeywords: [...prev.metaKeywords, val],
-                        newKeyword: "",
-                      }));
-                    }
-                  }
-                }}
+                name="name"
+                placeholder="e.g. Fashion"
+                value={form.name}
+                onChange={handleChange}
+                required
               />
             </div>
+
+            <div>
+              <Label className={"p-2"}>Translated Name</Label>
+              <Input
+                name="translatedName"
+                placeholder="e.g. Fashion"
+                value={form.translatedName}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <Label className={"p-2"}>Description</Label>
+              <Textarea
+                name="description"
+                placeholder="Short description about this category"
+                value={form.description}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <Label className={"p-2"}>Country</Label>
+              <Input
+                name="country"
+                placeholder="e.g. India"
+                value={form.country}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <Label className={"p-2"}>Page Title</Label>
+              <Input
+                name="pageTitle"
+                placeholder="SEO title for this category"
+                value={form.pageTitle}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <Label className={"p-2"}>Meta Description</Label>
+              <Textarea
+                name="metaDescription"
+                placeholder="SEO meta description"
+                value={form.metaDescription}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <Label className={"p-2"}>
+                Icon (Icon format){" "}
+                <Link
+                  href={`https://react-icons.github.io/react-icons/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 text-sm underline hover:text-blue-800"
+                >
+                  Browse Icons
+                </Link>
+              </Label>
+              <Input
+                name="icon"
+                value={form.icon}
+                onChange={handleChange}
+                placeholder="e.g. fa/FaAngleUp"
+              />
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">Preview:</span>
+              <div className="px-4 py-3 border bg-muted rounded-lg">
+                {getDynamicIconComponent(form.icon, 40)}
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <Label className="p-2">Meta Keywords</Label>
+              <div className="flex flex-wrap items-center gap-2 border rounded-md px-3 py-2 min-h-[42px] bg-background">
+                {form.metaKeywords.map((kw, i) => (
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className="flex items-center gap-1 px-2 py-1 text-sm"
+                  >
+                    <div className="pb-0.5">{kw}</div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-4 w-4 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          metaKeywords: prev.metaKeywords.filter(
+                            (_, idx) => idx !== i
+                          ),
+                        }))
+                      }
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+
+                <Input
+                  type="text"
+                  className="border-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-auto p-0 text-sm px-2"
+                  placeholder="Type & press comma"
+                  value={form.newKeyword || ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, newKeyword: e.target.value }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "," || e.key === "Enter") {
+                      e.preventDefault();
+                      const val = form.newKeyword?.trim();
+                      if (val && !form.metaKeywords.includes(val)) {
+                        setForm((prev) => ({
+                          ...prev,
+                          metaKeywords: [...prev.metaKeywords, val],
+                          newKeyword: "",
+                        }));
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </ScrollArea>
 
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={() => setOpen(false)}>

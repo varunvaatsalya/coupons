@@ -4,7 +4,10 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
-// npx prisma migrate dev --name add-age-to-user
+// npx prisma migrate dev --name add-age-to-user  // old method
+
+// npx prisma migrate dev --name add-age-to-user --create-only   // for check purpose
+// npx prisma migrate dev   // then run this for db update
 
 generator client {
   provider = "prisma-client-js"
@@ -191,7 +194,7 @@ model MerchantType {
 }
 
 model GeographicCountry {
-  id             String   @id @default(cuid())
+  id             String   @id @default(uuid()) @db.Uuid
   name           String   @unique
   currencyCode   String   @unique // ISO codes like 'INR', 'USD'
   currencySymbol String? // Optional, e.g. ₹ or $
@@ -337,7 +340,7 @@ model HomeSection {
 }
 
 model HomeSectionItem {
-  id        String      @id @default(uuid())
+  id        String      @id @default(uuid()) @db.Uuid
   sectionId String      @db.Uuid
   section   HomeSection @relation(fields: [sectionId], references: [id])
 
@@ -369,29 +372,32 @@ enum HomeCardStyle {
 }
 
 model Folder {
-  id          String   @id @default(cuid())
-  name        String
-  parentId    String?
-  parent      Folder?  @relation("SubFolders", fields: [parentId], references: [id])
-  subFolders  Folder[] @relation("SubFolders")
-  files       File[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @unique
+  parentId   String?  @db.Uuid
+  parent     Folder?  @relation("SubFolders", fields: [parentId], references: [id])
+  subFolders Folder[] @relation("SubFolders")
+  files      File[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model File {
-  id          String   @id @default(cuid())
-  folderId    String
-  folder      Folder   @relation(fields: [folderId], references: [id])
-  fileName    String // Display name
-  filePath    String // Actual storage path
-  fileId      String // Actual storage id
-  fileType    FileType
-  size        Int? // File size in bytes
-  mimeType    String? // eg: image/png, video/mp4
-  keywords    String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid()) @db.Uuid
+  folderId   String   @db.Uuid
+  folder     Folder   @relation(fields: [folderId], references: [id])
+  fileName   String
+  filePath   String   @unique
+  fileId     String   @unique
+  fileType   FileType
+  size       Int? // File size in bytes
+  isFavorite Boolean  @default(false)
+  mimeType   String? // eg: image/png, video/mp4
+  keywords   String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // @@unique([folderId, fileName])
 }
 
 enum FileType {

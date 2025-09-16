@@ -3,10 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { nanoid } from "nanoid";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Label } from "@/components/ui/label";
 import { showError, showSuccess } from "@/utils/toast";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import {
@@ -30,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Images,
   Info,
   LoaderCircle,
   MoreVertical,
@@ -45,6 +43,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import FileUploadDialog from "@/components/admin/gallery/FileUploadDialog";
 
 const images = [
   "https://irisholidays.com/keralatourism/wp-content/uploads/2017/02/kerala-images-photos.jpg",
@@ -201,37 +200,55 @@ const files1 = [
 
 function Page() {
   const params = useParams();
-  const folderName = params?.folder || null;
-  const [files, setFiles] = useState(files1);
+  const folderName = params?.folder || "unknown";
+  const [files, setFiles] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const loaderRef = useRef(null);
-  const [sortBy, setSortBy] = useState("name");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [copiedId, setCopiedId] = useState(null);
   const copyTimeout = useRef(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editImage, setEditImage] = useState(null);
 
-  const fetchFiles = async (page) => {
+  const fetchFiles = async (page, reset = false) => {
+    if (isLoading || !hasMore) return;
     setIsLoading(true);
     try {
-      // const res = await fetch(`/api/files?page=${page}&limit=20`);
-      // const data = await res.json();
+      const params = new URLSearchParams({
+        folderName,
+        page: String(page),
+        limit: "30",
+        sortBy,
+        sortOrder,
+      });
 
-      // if (data.files.length === 0) {
-      //   setHasMore(false);
-      // } else {
-      //   setFiles((prev) => [...prev, ...data.files]);
-      // }
-      setTimeout(() => {
-        setFiles((prev) => [...prev, ...files1]);
-        setIsLoading(false);
-      }, 2500);
+      const res = await fetch(`/api/gallery?${params.toString()}`);
+      const { success, images = [], message } = await res.json();
+      if (!success) {
+        showError(message || "Error in fetching images!");
+        return;
+      }
+
+      if (images.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setFiles((prev) => (reset ? images : [...prev, ...images]));
+
+      // setTimeout(() => {
+      //   setFiles((prev) => [...prev, ...files1]);
+      //   setIsLoading(false);
+      // }, 2500);
     } catch (err) {
       console.error("Failed to load files:", err);
+      showError("Something went wrong while loading files.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -239,6 +256,11 @@ function Page() {
   useEffect(() => {
     fetchFiles(page);
   }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    fetchFiles(1, true);
+  }, [sortBy, sortOrder]);
 
   // IntersectionObserver to detect scroll end
   useEffect(() => {
@@ -387,89 +409,97 @@ function Page() {
             <IoIosAddCircleOutline />
             <span className="px-1">New</span>
           </Button>
-          <UploadDialog
+          <FileUploadDialog
             setFiles={setFiles}
             open={isDialogOpen}
             setOpen={setIsDialogOpen}
             editImage={editImage}
             setEditImage={setEditImage}
+            folderName={folderName}
           />
         </div>
       </div>
-      <div className="flex-grow w-full bg-muted/50 rounded-lg overflow-y-auto p-3">
+      <ScrollArea className="flex-grow w-full h-64 bg-muted/50 rounded-lg p-3">
         <div className="flex flex-wrap gap-2">
-          {files.map((img, i) => (
-            <div key={i + img.id} className="relative group min-w-24">
-              <img
-                src={img.filePath}
-                alt={`img-${i}`}
-                loading="lazy"
-                className="h-40 w-full rounded-md object-cover flex-shrink-0"
-              />
+          {files.length > 0 ? (
+            files.map((img, i) => (
+              <div key={i + img.id} className="relative group min-w-24">
+                <img
+                  src={img.filePath}
+                  alt={`img-${i}`}
+                  loading="lazy"
+                  className="h-40 w-full rounded-md object-cover flex-shrink-0"
+                />
 
-              <button
-                className={
-                  "absolute top-2 left-2 bg-black/50 text-white p-1 rounded-full cursor-pointer  " +
-                  (img.isFavorite ? "" : "opacity-80 hover:opacity-100")
-                }
-              >
-                {img.isFavorite ? (
-                  <MdOutlineFavorite className="size-4 text-rose-600" />
-                ) : (
-                  <MdOutlineFavoriteBorder className="size-4" />
-                )}
-              </button>
-
-              <div
-                className="absolute top-2 right-2 bg-muted/40 backdrop-blur-sm rounded p-1 flex flex-col gap-1 
-                  opacity-0 group-hover:opacity-100 transition-opacity"
-              >
                 <button
-                  onClick={() => handleCopy(img.id)}
-                  className="bg-black/50 text-white p-1 rounded hover:bg-black/70"
+                  className={
+                    "absolute top-2 left-2 bg-black/50 text-white p-1 rounded-full cursor-pointer  " +
+                    (img.isFavorite ? "" : "opacity-80 hover:opacity-100")
+                  }
                 >
-                  {copiedId === img.id ? (
-                    <Check className="size-4 text-green-400" />
+                  {img.isFavorite ? (
+                    <MdOutlineFavorite className="size-4 text-rose-600" />
                   ) : (
-                    <Copy className="size-4" />
+                    <MdOutlineFavoriteBorder className="size-4" />
                   )}
                 </button>
-                <button
-                  onClick={() => setSelectedIndex(i)}
-                  className="bg-black/50 text-white p-1 rounded hover:bg-black/70"
-                >
-                  <Info className="size-4" />
-                </button>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="bg-black/50 text-white p-1 rounded hover:bg-black/70">
-                      <MoreVertical className="size-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                    <DropdownMenuItem>Delete</DropdownMenuItem>
-                    <DropdownMenuItem>Move</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div
+                  className="absolute top-2 right-2 bg-muted/40 backdrop-blur-sm rounded p-1 flex flex-col gap-1 
+                  opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <button
+                    onClick={() => handleCopy(img.id)}
+                    className="bg-black/50 text-white p-1 rounded hover:bg-black/70"
+                  >
+                    {copiedId === img.id ? (
+                      <Check className="size-4 text-green-400" />
+                    ) : (
+                      <Copy className="size-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setSelectedIndex(i)}
+                    className="bg-black/50 text-white p-1 rounded hover:bg-black/70"
+                  >
+                    <Info className="size-4" />
+                  </button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="bg-black/50 text-white p-1 rounded hover:bg-black/70">
+                        <MoreVertical className="size-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Edit</DropdownMenuItem>
+                      <DropdownMenuItem>Delete</DropdownMenuItem>
+                      <DropdownMenuItem>Move</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="flex flex-col gap-2 justify-center items-center mx-auto py-6 text-muted-foreground">
+              <Images className="size-12" />
+              <div className="text-lg font-semibold">No images available</div>
             </div>
-          ))}
+          )}
           <Dialog
             open={selectedIndex !== null}
             onOpenChange={() => setSelectedIndex(null)}
             className=""
           >
             {selectedIndex !== null && (
-              <DialogContent className="min-w-6xl w-6xl">
+              <DialogContent className="min-w-4xl lg:min-w-6xl">
                 <DialogHeader>
                   <DialogTitle className="text-center">
                     {files[selectedIndex].fileName}
                   </DialogTitle>
                 </DialogHeader>
 
-                <div className="flex flex-col md:flex-row items-start gap-6">
+                <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="relative w-3/5 flex items-center justify-center bg-black/5 rounded-md">
                     <img
                       src={files[selectedIndex].filePath}
@@ -530,7 +560,7 @@ function Page() {
                           <tr>
                             <td className="py-2 font-medium">Keywords</td>
                             <td className="py-2 text-muted-foreground">
-                              {files[selectedIndex].keywords.join(", ")}
+                              {files[selectedIndex].keywords?.join(", ")}
                             </td>
                           </tr>
                           <tr>
@@ -538,7 +568,7 @@ function Page() {
                             <td className="py-2 text-muted-foreground">
                               {format(
                                 new Date(files[selectedIndex].createdAt),
-                                "PPP p"
+                                "d MMM yyyy, h:mm a"
                               )}
                             </td>
                           </tr>
@@ -547,14 +577,14 @@ function Page() {
                             <td className="py-2 text-muted-foreground">
                               {format(
                                 new Date(files[selectedIndex].updatedAt),
-                                "PPP p"
+                                "d MMM yyyy, h:mm a"
                               )}
                             </td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
-                    <div>
+                    <div className="mt-6">
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -579,346 +609,24 @@ function Page() {
                 <div className="text-sm">Loading more images...</div>
               </div>
             ) : (
-              <span>Scroll for more</span>
+              <span>
+                Scroll for more
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    setPage((prev) => prev + 1);
+                  }}
+                  className="cursor-pointer"
+                >
+                  Click to Load More
+                </Button>
+              </span>
             )}
           </div>
         )}
-      </div>
+      </ScrollArea>
     </div>
   );
 }
 
 export default Page;
-
-function UploadDialog({
-  setFiles,
-  open,
-  setOpen,
-  editImage = null,
-  setEditImage,
-}) {
-  const [uploads, setUploads] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-  const isEditing = Boolean(editImage);
-
-  useEffect(() => {
-    if (isEditing && editImage) {
-      setUploads([
-        {
-          id: editImage.id,
-          file: null,
-          preview: editImage.filePath,
-          rotation: editImage.rotation || 0,
-          fileName: editImage.fileName || "",
-          keywords: editImage.keywords || [],
-        },
-      ]);
-    } else {
-      setUploads([]);
-    }
-  }, [isEditing, editImage]);
-
-  const handleFiles = (e) => {
-    const files = Array.from(e.target.files);
-    const newUploads = files.map((file) => ({
-      id: nanoid(),
-      file,
-      preview: URL.createObjectURL(file),
-      rotation: 0,
-      fileName: file.name,
-      keywords: [],
-      newKeyword: "",
-    }));
-    setUploads((prev) => [...prev, ...newUploads]);
-  };
-
-  const handleSubmit = async (data) => {
-    if (data.some((u) => !u.fileName || u.fileName.trim() === "")) {
-      showError("Each image must have a file name!");
-      return;
-    }
-
-    setSubmitting(true);
-    const formData = new FormData();
-    data.forEach((u, i) => {
-      formData.append(`files[${i}]`, u.file); // actual file
-      formData.append(`fileName[${i}]`, u.fileName);
-      formData.append(`keywords[${i}]`, JSON.stringify(u.keywords));
-      formData.append(`rotation[${i}]`, u.rotation);
-    });
-
-    try {
-      // let res = await fetch("/api/files", {
-      //   method: "POST",
-      //   body: formData,
-      // });
-      // res = await res.json();
-      // if (res.success) {
-      //   setFiles((prev) => [...res.uploadedImgages, ...prev]);
-      setUploads((prev) =>
-        prev.filter((u) => !data.find((d) => d.id === u.id))
-      );
-      showSuccess("Uploaded successfully!");
-      // }
-    } catch (err) {
-      console.error(err);
-      showError("Something went wrong while uploading images.");
-    } finally {
-      setTimeout(() => {
-        setSubmitting(false);
-      }, 1500);
-    }
-  };
-
-  const handleChangeFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const preview = URL.createObjectURL(file);
-
-    setUploads((prev) =>
-      prev.map((u) => (u.id === editImage.id ? { ...u, file, preview } : u))
-    );
-  };
-
-  const handleRemoveImg = (id) => {
-    setUploads((prev) => prev.filter((img) => id !== img.id));
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(val) => {
-        if (!val && isEditing) {
-          setUploads([]);
-          setEditImage(null);
-        }
-        setOpen(val);
-      }}
-    >
-      {/* <DialogTrigger asChild>
-        <Button className="flex items-center gap-1">
-          <IoIosAddCircleOutline />
-          <span className="px-1">New</span>
-        </Button>
-      </DialogTrigger> */}
-      <DialogContent className="min-w-4xl gap-2">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing && editImage ? "Update Images" : "Upload Images"}
-          </DialogTitle>
-        </DialogHeader>
-
-        {!(isEditing && editImage) && (
-          <div className="flex justify-end items-center gap-2 px-3">
-            <Input
-              id="file-upload"
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFiles}
-              className="hidden"
-            />
-
-            <p className="text-sm text-muted-foreground">{`${
-              uploads.length || "No"
-            } files selected`}</p>
-
-            <label
-              htmlFor="file-upload"
-              className="cursor-pointer inline-flex items-center text-sm font-semibold px-2 py-1 border rounded-md bg-muted hover:bg-muted/75"
-            >
-              Upload Images
-            </label>
-          </div>
-        )}
-
-        <ScrollArea className="max-h-[70vh] w-full rounded-md border border-muted p-2">
-          <div className="space-y-3">
-            {uploads.length > 0 ? (
-              uploads.map((u, i) => (
-                <div
-                  key={i}
-                  className="flex gap-4 border border-muted p-2 rounded-lg"
-                >
-                  <div className="w-48 h-48">
-                    <img
-                      src={u.preview}
-                      alt={u.fileName}
-                      style={{ transform: `rotate(${u.rotation}deg)` }}
-                      className="w-full h-full object-contain rounded"
-                    />
-                  </div>
-
-                  <div className="flex-1 flex items-start gap-2 border-l border-muted px-2">
-                    <Label className="py-2">{i + 1 + ". "}</Label>
-                    <div className="space-y-2 flex-1">
-                      <Input
-                        value={u.fileName}
-                        onChange={(e) =>
-                          setUploads((prev) =>
-                            prev.map((file) =>
-                              file.id === u.id
-                                ? {
-                                    ...file,
-                                    fileName: e.target.value,
-                                  }
-                                : file
-                            )
-                          )
-                        }
-                        placeholder="File name"
-                      />
-                      <div className="flex flex-wrap items-center gap-2 border rounded-md px-3 py-2 min-h-[42px] bg-background">
-                        {u.keywords.map((kw, i) => (
-                          <Badge
-                            key={i}
-                            variant="secondary"
-                            className="flex items-center gap-1 px-2 py-1 text-sm"
-                          >
-                            <div className="pb-0.5">{kw}</div>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              className="h-4 w-4 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() =>
-                                setUploads((prev) =>
-                                  prev.map((file) =>
-                                    file.id === u.id
-                                      ? {
-                                          ...file,
-                                          keywords: file.keywords.filter(
-                                            (_, idx) => idx !== i
-                                          ),
-                                        }
-                                      : file
-                                  )
-                                )
-                              }
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
-
-                        <Input
-                          type="text"
-                          className="border-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-auto p-0 text-sm px-2"
-                          placeholder="Type & press comma"
-                          value={u.newKeyword || ""}
-                          onChange={(e) =>
-                            setUploads((prev) =>
-                              prev.map((file) =>
-                                file.id === u.id
-                                  ? { ...file, newKeyword: e.target.value }
-                                  : file
-                              )
-                            )
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "," || e.key === "Enter") {
-                              e.preventDefault();
-                              const val = u.newKeyword?.trim();
-                              if (val && !u.keywords.includes(val)) {
-                                setUploads((prev) =>
-                                  prev.map((file) =>
-                                    file.id === u.id
-                                      ? {
-                                          ...file,
-                                          keywords: [...file.keywords, val],
-                                          newKeyword: "",
-                                        }
-                                      : file
-                                  )
-                                );
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          {isEditing && editImage ? (
-                            <>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                id={`change-${u.id}`}
-                                hidden
-                                onChange={handleChangeFile}
-                              />
-                              <label htmlFor={`change-${u.id}`}>
-                                <Button size="sm" variant="outline" asChild>
-                                  <span>Change Image</span>
-                                </Button>
-                              </label>
-                            </>
-                          ) : (
-                            <Button
-                              size="sm"
-                              disabled={submitting || !u.fileName}
-                              onClick={() => handleSubmit([u])}
-                              className="disabled:bg-muted/60"
-                            >
-                              {submitting ? "Wait..." : "Save This"}
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              setUploads((prev) =>
-                                prev.map((file) =>
-                                  file.id === u.id
-                                    ? {
-                                        ...file,
-                                        rotation: (file.rotation + 90) % 360,
-                                      }
-                                    : file
-                                )
-                              )
-                            }
-                          >
-                            Rotate
-                          </Button>
-                        </div>
-                        {!(isEditing && editImage) && (
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleRemoveImg(u.id)}
-                            className="cursor-pointer"
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground text-center">
-                No file selected!
-              </p>
-            )}
-          </div>
-        </ScrollArea>
-
-        {uploads.length > 0 && (
-          <Button
-            className="ml-auto"
-            disabled={submitting}
-            onClick={() => handleSubmit(uploads)}
-          >
-            {submitting
-              ? "Wait..."
-              : isEditing && editImage
-              ? "Update"
-              : "Save All"}
-          </Button>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}

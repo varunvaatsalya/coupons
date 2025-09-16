@@ -601,38 +601,39 @@ function BaseMerhcantForm({ register, setValue, watch, formOptions }) {
             </Dialog>
           </div>
         ) : (
-          <CldUploadWidget
-            uploadPreset="coupons"
-            options={{
-              folder: "logos",
-              sources: ["local", "url", "camera", "google_drive", "dropbox"],
-            }}
-            onSuccess={(result) => {
-              if (result.event === "success") {
-                const { secure_url, public_id } = result.info;
+          // <CldUploadWidget
+          //   uploadPreset="coupons"
+          //   options={{
+          //     folder: "logos",
+          //     sources: ["local", "url", "camera", "google_drive", "dropbox"],
+          //   }}
+          //   onSuccess={(result) => {
+          //     if (result.event === "success") {
+          //       const { secure_url, public_id } = result.info;
 
-                // console.log("Image URL:", secure_url);
-                // console.log("Public ID:", public_id);
+          //       // console.log("Image URL:", secure_url);
+          //       // console.log("Public ID:", public_id);
 
-                setValue("logoUrl", secure_url);
-                setValue("logoPublicId", public_id);
-              }
-            }}
-            onQueuesEnd={(result, { widget }) => {
-              widget.close();
-            }}
-          >
-            {({ open }) => {
-              return (
-                <div
-                  onClick={() => open()}
-                  className="h-32 w-32 rounded-full border border-input bg-input dark:bg-input/30 dark:hover:bg-input/50 flex justify-center items-center text-input cursor-pointer"
-                >
-                  <FaPlus className="text-2xl text-muted-foreground" />
-                </div>
-              );
-            }}
-          </CldUploadWidget>
+          //       setValue("logoUrl", secure_url);
+          //       setValue("logoPublicId", public_id);
+          //     }
+          //   }}
+          //   onQueuesEnd={(result, { widget }) => {
+          //     widget.close();
+          //   }}
+          // >
+          //   {({ open }) => {
+          //     return (
+          //       <div
+          //         onClick={() => open()}
+          //         className="h-32 w-32 rounded-full border border-input bg-input dark:bg-input/30 dark:hover:bg-input/50 flex justify-center items-center text-input cursor-pointer"
+          //       >
+          //         <FaPlus className="text-2xl text-muted-foreground" />
+          //       </div>
+          //     );
+          //   }}
+          // </CldUploadWidget>
+          <></>
         )}
       </div>
       <div className="grid grid-cols-12 gap-4 items-center">

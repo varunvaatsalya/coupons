@@ -1,9 +1,9 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import React from "react";
-import { IoIosAddCircleOutline } from "react-icons/io";
+import React, { useEffect, useState } from "react";
 import { FaFolder } from "react-icons/fa";
 import {
   DropdownMenu,
@@ -12,64 +12,81 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import NewFolderForm from "@/components/admin/gallery/NewFolderForm";
+import { showError } from "@/utils/toast";
 
-const folders = [
+const folders1 = [
   {
-    _id: "12",
+    id: "12",
     name: "Logo",
-    docsCount: 12,
+    fileCount: 12,
   },
   {
-    _id: "13",
+    id: "13",
     name: "Banners",
-    docsCount: 8,
+    fileCount: 8,
   },
   {
-    _id: "14",
+    id: "14",
     name: "Designs",
-    docsCount: 0,
+    fileCount: 0,
   },
   {
-    _id: "15",
+    id: "15",
     name: "Designs",
-    docsCount: 0,
+    fileCount: 0,
   },
   {
-    _id: "16",
+    id: "16",
     name: "Designs",
-    docsCount: 0,
+    fileCount: 0,
   },
   {
-    _id: "17",
+    id: "17",
     name: "Designs",
-    docsCount: 0,
+    fileCount: 0,
   },
   {
-    _id: "18",
+    id: "18",
     name: "Designs",
-    docsCount: 0,
+    fileCount: 0,
   },
   {
-    _id: "19",
+    id: "19",
     name: "Designs",
-    docsCount: 0,
+    fileCount: 0,
   },
 ];
 
 function Page() {
+  const [folders, setFolders] = useState([]);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        let res = await fetch("/api/gallery/folders");
+        res = await res.json();
+        if (res.success) {
+          setFolders(res.folders);
+        } else showError(res.message || "Error in fetching folders info!");
+      } catch (error) {
+        console.log(error);
+        showError("Clint Side fetch error!");
+      }
+    }
+    fetchData();
+  }, []);
+
+  const handleFolderCreated = (newFolder) => {
+    setFolders((prev) => [...prev, newFolder]);
+  };
+
   return (
     <div className="h-[100dvh] flex flex-col w-full text-sm font-sans p-2 space-y-4">
-      {/* Header */}
       <div className="flex justify-between items-center gap-2">
         <div className="font-bold text-xl px-2 text-nowrap">Your Gallery</div>
         <div className="flex items-center justify-end gap-3">
           <Input placeholder="Search folders..." />
-          <Button asChild className="flex items-center gap-1">
-            <Link href="/works/gallery">
-              <IoIosAddCircleOutline />
-              <span>New Folder</span>
-            </Link>
-          </Button>
+          <NewFolderForm onFolderCreated={handleFolderCreated} />
         </div>
       </div>
 
@@ -77,7 +94,7 @@ function Page() {
       <div className="flex flex-col gap-2 flex-grow overflow-y-auto p-2">
         {folders.map((folder, index) => (
           <Link
-            key={folder._id}
+            key={folder.id}
             href={`/works/gallery/${folder.name}`}
             className="group border rounded-md shadow-sm px-4 py-2 flex justify-between items-center
                        hover:shadow-md hover:border-primary transition cursor-pointer
@@ -89,8 +106,8 @@ function Page() {
               <span className="font-medium truncate flex-1">{folder.name}</span>
             </div>
             <div className="flex-1 flex justify-between items-center gap-3">
-              <Badge variant={folder.docsCount > 0 ? "default" : "secondary"}>
-                {folder.docsCount}
+              <Badge variant={folder.fileCount > 0 ? "default" : "secondary"}>
+                {folder.fileCount}
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

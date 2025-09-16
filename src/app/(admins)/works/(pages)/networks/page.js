@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Plus, Pencil, Delete, DeleteIcon, ChevronUp } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { MdDeleteOutline } from "react-icons/md";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RxCross2 } from "react-icons/rx";
 
 export default function NetworkPage() {
   const [networks, setNetworks] = useState([]);
@@ -333,17 +335,18 @@ function NetworkDialog({ open, onClose, onSubmit, submitting, initialData }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 max-h-[50vh] overflow-y-auto px-3">
-          <Input
-            placeholder="Network Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        <Input
+          placeholder="Network Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
 
-          <div className="space-y-2">
+        {/* Scrollable parameter list */}
+        <ScrollArea className="max-h-[50vh]">
+          <div className="pr-3 py-1">
             {parameters.map((param, idx) => (
-              <div key={idx} className="flex gap-2 items-center">
-                <span className="w-5 text-right text-sm text-muted-foreground">
+              <div key={idx} className="flex gap-2 items-center mb-2">
+                <span className="w-16 text-right text-sm text-muted-foreground">
                   {idx + 1}.
                 </span>
                 <Input
@@ -365,17 +368,22 @@ function NetworkDialog({ open, onClose, onSubmit, submitting, initialData }) {
                 >
                   <ChevronUp className="h-4 w-4" />
                 </Button>
-
-                <Button variant="destructive" onClick={() => removeParam(idx)}>
-                  <MdDeleteOutline />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeParam(idx)}
+                  className="h-8 w-8 p-1"
+                >
+                  <RxCross2 className="h-4 w-4 text-red-500" />
                 </Button>
               </div>
             ))}
-            <Button variant="outline" onClick={addParam}>
-              + Add Parameter
-            </Button>
           </div>
-        </div>
+
+          <Button variant="outline" onClick={addParam}>
+            + Add Parameter
+          </Button>
+        </ScrollArea>
 
         <DialogFooter>
           <Button type="submit" disabled={submitting} onClick={handleSubmit}>
