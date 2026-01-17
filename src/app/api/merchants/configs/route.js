@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyTokenWithLogout } from "@/utils/jwt";
-import prisma from "@/lib/prisma";
+// import prisma from "@/lib/prisma";
 
 export async function GET(req) {
   const token = req.cookies.get("authToken");

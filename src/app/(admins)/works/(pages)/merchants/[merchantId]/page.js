@@ -215,15 +215,15 @@ function Page() {
     }, 1000)
   ).current;
 
-  useEffect(() => {
-    if (
-      (!initialDataLoaded && merchantId !== "new") ||
-      !apiCallEnabled ||
-      creating
-    )
-      return;
-    debouncedSave();
-  }, [watchedValues]);
+  // useEffect(() => {
+  //   if (
+  //     (!initialDataLoaded && merchantId !== "new") ||
+  //     !apiCallEnabled ||
+  //     creating
+  //   )
+  //     return;
+  //   debouncedSave();
+  // }, [watchedValues]);
 
   useEffect(() => {
     if (!initialDataLoaded) {
@@ -697,8 +697,8 @@ function BaseMerhcantForm({ register, setValue, watch, formOptions }) {
               className="w-1/2 col-span-9"
             >
               {watch("countries").length > 0
-                ? `${watch("countries").length} country${
-                    watch("countries").length > 1 ? "ies" : ""
+                ? `${watch("countries").length} countr${
+                    watch("countries").length > 1 ? "ies" : "y"
                   } selected`
                 : "Select countries"}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

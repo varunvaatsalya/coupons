@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { verifyTokenWithLogout } from "@/utils/jwt";
-import prisma from "@/lib/prisma";
+import dbConnect from "@/lib/Mongodb";
+import Country from "@/models/Country";
 
-const model = prisma.geographicCountry;
+// import prisma from "@/lib/prisma";
+
+// const model = prisma.geographicCountry;
 
 export async function GET(req) {
+  await dbConnect();
   const token = req.cookies.get("authToken");
 
   if (!token) {
@@ -26,9 +30,7 @@ export async function GET(req) {
   }
 
   try {
-    const countries = await model.findMany({
-      orderBy: { name: "asc" },
-    });
+    const countries = await Country.find().sort({ name: 1 });
 
     return NextResponse.json(
       {
@@ -57,30 +59,37 @@ export async function POST(req) {
     }
 
     console.log(id, name, currencyCode, currencySymbol);
+
     let result;
 
     if (id) {
-      result = await model.update({
-        where: { id },
-        data: {
+      result = await Country.findByIdAndUpdate(
+        id,
+        {
           name,
           currencyCode: currencyCode ?? "",
           currencySymbol: currencySymbol ?? "",
         },
-      });
+        { new: true }
+      );
+
+      if (!result) {
+        return NextResponse.json(
+          { message: "Country not found", success: false },
+          { status: 404 }
+        );
+      }
     } else {
       try {
-        result = await model.create({
-          data: {
-            name,
-            currencyCode: currencyCode ?? "",
-            currencySymbol: currencySymbol ?? "",
-          },
+        result = await Country.create({
+          name,
+          currencyCode: currencyCode ?? "",
+          currencySymbol: currencySymbol ?? "",
         });
       } catch (err) {
-        if (err.code === "P2002") {
+        if (err.code === 11000) {
           return NextResponse.json(
-            { message: `Value Already exist!`, success: false },
+            { message: "Value already exists!", success: false },
             { status: 409 }
           );
         }
@@ -109,10 +118,14 @@ export async function DELETE(req) {
       );
     }
 
-    const result = await model.deleteMany({
-      where: { id },
-    });
-    console.log(result);
+    const result = await Country.findByIdAndDelete(id);
+
+    if (!result) {
+      return NextResponse.json(
+        { message: "Country not found", success: false },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

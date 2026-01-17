@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { verifyTokenWithLogout } from "@/utils/jwt";
-import prisma from "@/lib/prisma";
+import Network from "@/models/Network";
+// import prisma from "@/lib/prisma";
 
 export async function GET(req) {
   let sort = req.nextUrl.searchParams.get("sort");
+
+  await dbConnect();
+
   const token = req.cookies.get("authToken");
 
   if (!token) {
@@ -25,22 +29,35 @@ export async function GET(req) {
   }
 
   try {
-    const orderBy = sort === "name" ? { name: "asc" } : { createdAt: "desc" };
+    const sortStage = sort === "name" ? { name: 1 } : { createdAt: -1 };
 
-    const networks = await prisma.network.findMany({
-      include: { merchants: { select: { id: true } } },
-      orderBy,
-    });
+    const networks = await Network.aggregate([
+      {
+        $lookup: {
+          from: "merchants", // collection name
+          localField: "_id",
+          foreignField: "network",
+          as: "merchants",
+        },
+      },
+      {
+        $addFields: {
+          merchantCount: { $size: "$merchants" },
+        },
+      },
+      {
+        $project: {
+          merchants: 0,
+        },
+      },
+      {
+        $sort: sortStage,
+      },
+    ]);
 
-    const mappedNetworks = networks.map(({ merchants, ...n }) => ({
-      ...n,
-      merchantCount: merchants.length,
-    }));
-
-    console.log(mappedNetworks);
     return NextResponse.json(
       {
-        networks: mappedNetworks,
+        networks,
         success: true,
       },
       { status: 200 }
@@ -85,30 +102,37 @@ export async function POST(req) {
     let result;
 
     if (id) {
-      result = await prisma.network.update({
-        where: { id },
-        data: { name, parameters },
-      });
-    } else {
-      const existing = await prisma.network.findUnique({
-        where: { name },
-      });
+      result = await Network.findByIdAndUpdate(
+        id,
+        { name, parameters },
+        { new: true }
+      );
 
-      if (existing) {
-        result = await prisma.network.update({
-          where: { id: existing.id },
-          data: { name, parameters },
-        });
-      } else {
-        result = await prisma.network.create({
-          data: { name, parameters },
-        });
+      if (!result) {
+        return NextResponse.json(
+          { message: "Network not found", success: false },
+          { status: 404 }
+        );
       }
+    } else {
+      result = await Network.create({
+        name,
+        parameters,
+      });
     }
 
     return NextResponse.json({ success: true, data: result });
   } catch (err) {
     console.error("Config upsert error:", err);
+    if (err.code === 11000) {
+      return NextResponse.json(
+        {
+          message: "Network with this name already exists",
+          success: false,
+        },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: "Internal server error", success: false },
       { status: 500 }
@@ -145,9 +169,14 @@ export async function DELETE(req) {
   }
 
   try {
-    const deleted = await prisma.network.delete({
-      where: { id },
-    });
+    const deleted = await Network.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { message: "Network not found", success: false },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true, data: deleted });
   } catch (error) {

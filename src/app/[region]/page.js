@@ -3,13 +3,16 @@ import { BsStars } from "react-icons/bs";
 import CarouselImages from "@/components/public/carousalImage/CarouselImages";
 import handIcon from "./assets/icon-hand-heart.svg";
 import Header from "@/components/public/Header";
-import Navbar from "@/components/public/Navbar/Navbar";
+// import Navbar from "@/components/public/Navbar/Navbar";
 import Footer from "@/components/public/Footer";
 import Image from "@/components/public/ImageWithFallBack";
-import MainLayout from "@/components/public/layout/MainLayout";
+import { getSections } from "../services/test";
+// import MainLayout from "@/components/public/layout/MainLayout";
 
-function Page() {
+async function Page() {
   // const pathname = usePathname();
+  const sections = await getSections();
+  console.log(sections);
 
   return (
     <main className="">
@@ -20,7 +23,7 @@ function Page() {
         </span>
       </div>
       <Header />
-      <Navbar />
+      {/* <Navbar /> */}
 
       <CarouselImages />
       <div className="p-2 flex justify-around gap-4 items-center bg-teal-300 mb-10">
@@ -346,7 +349,7 @@ function Page() {
           </div>
         </div>
       </div> */}
-      <MainLayout />
+      {/* <MainLayout /> */}
       <Footer />
     </main>
   );
